@@ -93,17 +93,21 @@ Top level: `metadata`*, `instructions`, `ui_settings`, `python_setup`*, `hints`,
 | `pyodide_base_url` | string | `""` | Empty = runtime bundled in the export; non-empty = absolute `http(s)` URL serving the pinned file set with CORS |
 
 ### hints[]
-`id`, `message`, `display_mode` (`triggered`\|`checklist`), `priority` (≥1, higher wins),
+`id`, `message`, `display_mode` (`triggered`\|`checklist`, default `checklist` —
+hints are always visible and tick off when they fire; `triggered` hides them until
+their condition holds), `priority` (≥1, higher wins),
 `delay_seconds`, `show_once`, `style` (`success`\|`warning`\|`error`), and
 `trigger`: `event` (`code_change`\|`test_fail`\|`manual`; `conditions` required for
 `code_change`), `after_attempts`, `invalidate_on_condition_false`.
+`code_change` triggers are debounced (500 ms of quiet) and batch every candidate
+hint's conditions into a single analyzer call.
 
 ### Conditions (six types)
 
 | Type | Fields | Meaning |
 | --- | --- | --- |
 | `ast_pattern` | `pattern`, `min_count` (≥1, default 1), `max_count` (optional, ≥ min) | Count AST matches of a Python-source pattern |
-| `source_regex` | `pattern`, `case_sensitive` (default true), `regex_flags` (chars from `ims`) | `re.search` over the raw source |
+| `source_regex` | `pattern`, `case_sensitive` (default true), `regex_flags` (chars from `ims`) | Python `re.search` over the raw source — `re` dialect, so `\1` backreferences work |
 | `source_empty` | — | Passes when the editor is empty/whitespace |
 | `all` / `any` / `none` | `conditions` (≥1 child) | AND / OR / NOT over child conditions |
 
@@ -129,6 +133,11 @@ collision). Every executing test type shares one deduplicated execution plan per
 `{promptInputs, files, captures}` tuple; `code_structure` and hint conditions batch
 into a single `analyze` call per Check.
 
+Regex dialects differ by field: condition `source_regex` patterns are **Python `re`**
+(executed in the analyzer), while assertion `match_mode: "regex"` patterns are
+**JavaScript `RegExp`** (evaluated in the page). Both support groups and
+backreferences such as `(foo) something \1`.
+
 ## AST Pattern Language
 
 A pattern is **Python source** parsed with `ast.parse` (module mode) that must contain
@@ -137,7 +146,9 @@ at least one statement.
 **Wildcards**
 
 - `_` (bare underscore name in expression position) matches **any single expression**;
-  it never binds.
+  it never binds. In **statement position** (a bare `_` statement, e.g. a loop body)
+  it matches **any single statement**, so `for _ in range(_):` with a `_` body also
+  matches a body of `pass`, `break`, or an assignment.
 - `_name` (e.g. `_x`, `_total` — `^_[A-Za-z0-9][A-Za-z0-9_]*$`) is a **named
   wildcard**: first occurrence binds the matched subtree; every later occurrence in the
   same match attempt must be equal. A student `Name` binds its **identifier**, so
@@ -184,14 +195,17 @@ button before export.
   synchronously inside the worker; `pyodide.setStdout/setStderr` callbacks stream
   output back with the current attempt number.
 - **Replay input** — `input()` with an exhausted queue in run mode raises `need-input`;
-  the page shows a dialog and the **whole program re-runs** with the accumulated
-  answers, reseeding `random` from the first attempt's seed. Caveat: wall-clock-driven
+  the page shows the input bar docked below the run transcript (prompt line, then the
+  field — it never covers the output) and the **whole program re-runs** with the
+  accumulated answers, reseeding `random` from the first attempt's seed. The answer is
+  echoed onto the prompt line in the transcript, in/out chips stay in a
+  `user-select: none` gutter. Caveat: wall-clock-driven
   code (`time.time()`, `datetime.now()`) can diverge between attempts — avoid
   time-dependent logic in interactive activities.
 - **Watchdogs (layered interruption)** — Python: `sys.settrace` event budget
   (`max_trace_events`) + soft wall clock (`soft_wall_ms`, 3 s check / 15 s run).
   JS: a 5 s hard deadline in check mode (catches C-level hangs) and a 20 s silence
-  watchdog in run mode (suspended while an input dialog is open). Stop terminates the
+  watchdog in run mode (suspended while the input bar is parked). Stop terminates the
   worker outright; the next operation lazily respawns and re-inits. SharedArrayBuffer
   interrupts are unavailable on Moodle (no COOP/COEP control), hence this design.
 - **Two-layer persistence** — `cmi.suspend_data` (4096 chars by default, ASCII-safe

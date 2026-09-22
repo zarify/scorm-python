@@ -8,6 +8,9 @@
 
 import { VALID_CONDITION_TYPES } from '../../shared/config-validator.js';
 import { enableListReordering } from './list-reorder.js';
+import { basicSetup } from 'codemirror';
+import { EditorView, placeholder as cmPlaceholder } from '@codemirror/view';
+import { python } from '@codemirror/lang-python';
 
 const CONDITION_TYPE_LABELS = {
   ast_pattern: 'AST pattern (Python source)',
@@ -36,6 +39,18 @@ export function createDefaultCondition(type = 'ast_pattern') {
 }
 
 /**
+ * Tear down CodeMirror instances under `container` before its DOM is wiped.
+ * Re-renders replace innerHTML; without this the views would leak.
+ */
+export function destroyConditionEditors(container) {
+  if (!container) return;
+  container.querySelectorAll('.cond-pattern').forEach((host) => {
+    host.condPatternView?.destroy();
+    host.condPatternView = null;
+  });
+}
+
+/**
  * Render a condition editor into `container`.
  * @param {{
  *   container: HTMLElement,
@@ -47,6 +62,7 @@ export function createDefaultCondition(type = 'ast_pattern') {
  * }} options
  */
 export function renderConditionEditor({ container, condition, onChange, validatePattern, depth = 0, onRemove }) {
+  destroyConditionEditors(container);
   container.innerHTML = '';
   const rerender = () => renderConditionEditor({
     container, condition, onChange, validatePattern, depth, onRemove,
@@ -150,17 +166,26 @@ function renderAstPatternFields(condition, onChange, validatePattern) {
     + 'or call arguments.';
   fragment.appendChild(hint);
 
-  const textarea = document.createElement('textarea');
-  textarea.className = 'cond-pattern mono';
-  textarea.rows = 4;
-  textarea.spellcheck = false;
-  textarea.placeholder = 'e.g. _x = input(...)\n...\nprint(_x)';
-  textarea.value = condition.pattern ?? '';
-  textarea.addEventListener('input', () => {
-    condition.pattern = textarea.value;
-    onChange(condition);
+  const host = document.createElement('div');
+  host.className = 'cond-pattern mono';
+  fragment.appendChild(host);
+  const view = new EditorView({
+    doc: condition.pattern ?? '',
+    parent: host,
+    extensions: [
+      basicSetup,
+      python(),
+      EditorView.lineWrapping,
+      cmPlaceholder('e.g. _x = input(...)\n...\nprint(_x)'),
+      EditorView.updateListener.of((update) => {
+        if (update.docChanged) {
+          condition.pattern = view.state.doc.toString();
+          onChange(condition);
+        }
+      }),
+    ],
   });
-  fragment.appendChild(textarea);
+  host.condPatternView = view;
 
   const counts = document.createElement('div');
   counts.className = 'condition-counts';
@@ -242,6 +267,7 @@ function renderRegexFields(condition, onChange) {
   patternInput.type = 'text';
   patternInput.className = 'cond-regex-pattern mono';
   patternInput.spellcheck = false;
+  patternInput.placeholder = 'e.g. for \\w+ in range\\(len\\(\\w+\\)\\):';
   patternInput.value = condition.pattern ?? '';
   patternInput.addEventListener('input', () => {
     condition.pattern = patternInput.value;
@@ -281,7 +307,9 @@ function renderRegexFields(condition, onChange) {
 
   const flagNote = document.createElement('p');
   flagNote.className = 'condition-note';
-  flagNote.innerHTML = '<code>i</code> is controlled by the case-sensitive checkbox. '
+  flagNote.innerHTML = 'Python <code>re</code> syntax — the engine runs <code>re.search</code> over the raw '
+    + 'source, so groups and backreferences like <code>(\\w+) \\1</code> work. '
+    + '<code>i</code> is controlled by the case-sensitive checkbox. '
     + '<code>m</code> = multiline anchors, <code>s</code> = dot matches newline.';
 
   fragment.append(patternLabel, patternInput, options, flagNote);
@@ -296,6 +324,7 @@ function renderCompositeFields(condition, onChange, validatePattern, depth) {
   list.className = 'condition-children';
 
   const renderChildren = () => {
+    destroyConditionEditors(list);
     list.innerHTML = '';
     condition.conditions.forEach((child, index) => {
       const card = document.createElement('div');

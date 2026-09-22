@@ -77,6 +77,29 @@ class WildcardTests(unittest.TestCase):
         source = "x = 1\ny = 2\nz = 3"
         self.assertEqual(count(source, pattern), 1)
 
+    def test_underscore_statement_matches_pass_body(self):
+        # The reported gap: `pass` is a statement with no expression inside,
+        # so an expression-only wildcard would never match it.
+        pattern = "for _ in range(_):\n    _"
+        self.assertEqual(count("for i in range(3):\n    pass", pattern), 1)
+
+    def test_underscore_statement_matches_expression_bodies(self):
+        pattern = "for _ in range(_):\n    _"
+        self.assertEqual(count("for i in range(3):\n    print(i)", pattern), 1)
+
+    def test_underscore_statement_matches_any_single_statement(self):
+        pattern = "for _ in range(_):\n    _"
+        for body in ("break", "x = i", "i += 1", "while True:\n        pass"):
+            source = f"for i in range(3):\n    {body}"
+            with self.subTest(body=body):
+                self.assertEqual(count(source, pattern), 1)
+
+    def test_underscore_statement_requires_the_same_structure_around_it(self):
+        pattern = "for _ in range(_):\n    _"
+        self.assertEqual(count("while True:\n    pass", pattern), 0)
+        # The body wildcard is still one statement: two-statement bodies need `...`.
+        self.assertEqual(count("for i in range(3):\n    print(i)\n    pass", pattern), 0)
+
 
 class ExpressionModeTests(unittest.TestCase):
     def test_print_matches_inside_assignment(self):

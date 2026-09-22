@@ -6,8 +6,9 @@
 browser-based **Activity Builder**. Students write Python in a CodeMirror 6 editor; their code
 runs client-side in **Pyodide 314.0.7 (CPython 3.14)** inside a module Web Worker with layered
 watchdogs (trace budget, wall clock, JS deadlines, worker terminate + lazy respawn), captured
-stdio, `input()` via a dialog + whole-program replay, and file I/O in Pyodide's in-memory
-filesystem. Authors define starter code, seeded files, hints, and points-based tests in one
+stdio, `input()` via a bottom-docked prompt bar + whole-program replay, and file I/O in
+Pyodide's in-memory filesystem. Authors define starter code, seeded files, hints, and
+points-based tests in one
 `activity_config.json`; structural checks are **AST patterns** (Python source with wildcards)
 and regexes, graded client-side and reported through SCORM 1.2.
 
@@ -77,10 +78,12 @@ Build/serve: `scripts/build.js` (esbuild IIFE bundles + asset copies),
   never a Blockly workspace. The validator rejects legacy keys (`weight`, `expected_output`,
   top-level `match_mode`, `type` comparison) and unknown condition types — don't reintroduce
   aliases.
-- **Conditions are exactly six types**: `ast_pattern`, `source_regex`, `source_empty`,
-  `all`/`any`/`none`. AST patterns are parsed by `astmatch.py`; `...` is only valid as a
-  statement or a call argument; `def name(...)` (stub-style params) is rewritten before
-  parsing — CPython rejects `...` as a parameter list.
+- **Conditions are exactly six types**: `ast_pattern`, `source_regex` (Python `re`),
+  `source_empty`, `all`/`any`/`none`. AST patterns are parsed by `astmatch.py`;
+  `...` is only valid as a statement or a call argument; `def name(...)` (stub-style
+  params) is rewritten before parsing — CPython rejects `...` as a parameter list;
+  a bare `_` matches any expression in expression position and any statement in
+  statement position (so a `_` loop body matches `pass`).
 - **Input replay**: `input()` with an empty queue in run mode raises `need-input`; the whole
   program re-runs. The session seed arrives via `need-input.seed` and is passed back as
   `spec.seed` so `random` stays stable across attempts. `input()` prompts go to the **console
@@ -165,7 +168,7 @@ node --test test/<file>.test.js  # one suite
 ## Testing & QA
 
 - Three suites plus browser scenarios; **all four must be green** before handing work back:
-  `npm test` (227), `npm run test:python` (69), `npm run build && npm run export` (both modes),
+  `npm test` (227), `npm run test:python` (73), `npm run build && npm run export` (both modes),
   `npm run test:browser` (20 across 7 files).
 - Browser tests **skip** (not fail) when no Chrome/Chromium launches; `PLAYWRIGHT_CHANNEL`
   overrides the channel. They drive the real Pyodide runtime against a mock LMS

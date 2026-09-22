@@ -75,13 +75,17 @@ test('the dialog round-trip yields one coherent transcript', async (t) => {
 
   const promptVisible = await page.evaluate(() => {
     const transcript = document.querySelector('[data-console-transcript]');
+    const transcriptBox = transcript?.getBoundingClientRect();
+    const dialogBox = document.getElementById('input-dialog')?.getBoundingClientRect();
     return {
       console: transcript?.textContent ?? '',
       promptLabel: document.getElementById('input-dialog-label')?.textContent ?? '',
+      dockedBelow: Boolean(transcriptBox && dialogBox && dialogBox.top >= transcriptBox.bottom - 1),
     };
   });
   assert.match(promptVisible.console, /What is your name\?/, 'the prompt streamed into the console');
   assert.equal(promptVisible.promptLabel, 'What is your name?', 'the dialog carries the prompt text');
+  assert.equal(promptVisible.dockedBelow, true, 'the input bar docks below the transcript, never over it');
 
   await page.fill('#input-dialog-field', 'Ada');
   await page.click('#btn-input-ok');
@@ -92,14 +96,22 @@ test('the dialog round-trip yields one coherent transcript', async (t) => {
     { timeout: 30_000 },
   );
 
-  const transcript = await page.evaluate(
-    () => document.querySelector('[data-console-transcript]')?.textContent ?? '',
+  // Exactly one attempt's worth of rows: the prompt line now carries the
+  // answer (a replay bug would duplicate the prompt), the greeting follows as
+  // an output row, and every row shares the same chip gutter.
+  const rows = await page.evaluate(
+    () => [...document.querySelectorAll('[data-console-transcript] .console-entry')].map((el) => ({
+      type: ([...el.classList].find((name) => name.startsWith('console-entry-') && name !== 'console-entry') ?? '')
+        .replace('console-entry-', ''),
+      badge: el.querySelector('.console-entry-badge')?.textContent ?? '',
+      text: el.querySelector('.console-entry-value')?.textContent ?? '',
+    })),
   );
-  // Exactly one attempt's worth of output: prompt + greeting + the closing
-  // status row. A replay bug would duplicate the prompt. The prompt has no
-  // trailing space (the example's prompt_assertion regex pins the exact text),
-  // so the greeting follows it directly — same as real CPython.
-  assert.equal(transcript, 'What is your name?Hello, Ada!\ndoneProgram finished.');
+  assert.deepEqual(rows, [
+    { type: 'input', badge: 'in', text: 'What is your name? Ada' },
+    { type: 'output', badge: 'out', text: 'Hello, Ada!' },
+    { type: 'status', badge: 'done', text: 'Program finished.' },
+  ]);
   assert.deepEqual(errors, []);
 });
 

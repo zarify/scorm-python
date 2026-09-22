@@ -56,7 +56,7 @@ const DEFAULT_TEST_TYPE = 'stdout_match';
 const DEFAULT_HINT_EVENT = 'code_change';
 const DEFAULT_CONDITION = Object.freeze({ type: 'source_empty' });
 const DEFAULT_VARIABLE_COMPARISON = 'equals';
-const DEFAULT_HINT_DISPLAY_MODE = 'triggered';
+const DEFAULT_HINT_DISPLAY_MODE = 'checklist';
 
 /**
  * Normalize an arbitrary config object into a complete config: every documented

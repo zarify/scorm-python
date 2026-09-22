@@ -110,15 +110,15 @@ test('an invalid ast_pattern fails Validate and a fixed one clears', async (t) =
   await importConfigIntoBuilder(page, join(EXAMPLES, 'hello-world.json'));
   await openTab(page, 'tests');
   await page.click('.test-list-item[data-index="1"]'); // the code_structure test
-  await page.waitForSelector('#test-condition-builder .cond-pattern', { timeout: 10_000 });
+  await page.waitForSelector('#test-condition-builder .cond-pattern .cm-content', { timeout: 10_000 });
 
-  await page.fill('#test-condition-builder .cond-pattern', 'value = ...');
+  await setPattern(page, 'value = ...');
   await page.click('#test-condition-builder .cond-validate');
   await page.waitForSelector('#test-condition-builder .cond-validate-result.is-error', { timeout: 30_000 });
   const errorText = await page.textContent('#test-condition-builder .cond-validate-result');
   assert.match(errorText, /\.\.\. is only allowed/, 'the parse/misuse error is shown inline');
 
-  await page.fill('#test-condition-builder .cond-pattern', 'print(...)');
+  await setPattern(page, 'print(...)');
   await page.click('#test-condition-builder .cond-validate');
   await page.waitForSelector('#test-condition-builder .cond-validate-result.is-ok', { timeout: 30_000 });
   assert.match(
@@ -127,6 +127,15 @@ test('an invalid ast_pattern fails Validate and a fixed one clears', async (t) =
   );
   assert.deepEqual(errors, []);
 });
+
+/** Replace the CodeMirror-backed AST pattern through its document API. */
+async function setPattern(page, text) {
+  await page.evaluate((pattern) => {
+    const view = document.querySelector('#test-condition-builder .cond-pattern')?.condPatternView;
+    if (!view) throw new Error('pattern editor not mounted');
+    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: pattern } });
+  }, text);
+}
 
 async function exportZip(page) {
   const directory = await mkdtemp(join(tmpdir(), 'scorm-export-'));

@@ -423,6 +423,27 @@ body {
 .weight-error { background: #ffebee; color: #c62828; }
 
 /* Condition builder */
+.mono,
+.cond-pattern,
+.cond-regex-pattern {
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+.cond-pattern .cm-editor {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.cond-pattern .cm-editor .cm-content {
+  min-height: 5em;
+  padding: 6px 8px;
+}
+
+.cond-pattern .cm-scroller {
+  font-family: inherit;
+}
+
 .condition-builder {
   background: #f9f9f9;
   border: 1px solid #e0e0e0;

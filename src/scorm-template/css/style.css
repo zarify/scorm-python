@@ -223,8 +223,8 @@ body {
 }
 
 /* Stop must stay clickable while the results modal (z-index 1000) shows the
-   console — the input dialog (1200) still layers above it, so its Cancel is
-   the stop path while a prompt is parked. */
+   console — Stop is the way out of a run even with a prompt parked in the
+   docked input bar. */
 #btn-stop {
   position: relative;
   z-index: 1100;
@@ -373,6 +373,12 @@ body.modal-open {
   line-height: 1.6;
 }
 
+.console-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .console-entry {
   display: grid;
   grid-template-columns: var(--console-gutter-width) minmax(0, 1fr);
@@ -392,6 +398,9 @@ body.modal-open {
   text-transform: uppercase;
   text-align: center;
   white-space: nowrap;
+  /* Chips live in the gutter and must never enter a text selection. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .console-entry-value {
@@ -777,40 +786,25 @@ body.modal-open {
   overflow-y: auto;
 }
 
-/* Input dialog (interactive run prompts) */
+/* Input bar — docked below the run transcript (rendered by the console shell)
+   so a pending prompt never covers the program's output. */
 .input-dialog {
-  position: fixed;
-  inset: 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  padding: 16px;
-  z-index: 1200;
+  gap: 8px 10px;
+  padding: 12px;
+  border: 1px solid #dbe4f0;
+  border-radius: 10px;
+  background: #f8fafc;
 }
 
 .input-dialog.hidden {
   display: none;
 }
 
-.input-dialog-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.56);
-}
-
-.input-dialog-dialog {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: min(420px, 100%);
-  background: #fff;
-  border-radius: 12px;
-  padding: 18px;
-  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
-}
-
 .input-dialog-prompt {
+  flex: 1 1 100%;
   font-size: 14px;
   font-weight: 600;
   color: #1a1a1a;
@@ -819,7 +813,8 @@ body.modal-open {
 }
 
 .input-dialog-field {
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 200px;
   padding: 9px 10px;
   border: 1px solid #cbd5e1;
   border-radius: 6px;

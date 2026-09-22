@@ -36,6 +36,7 @@ let interactiveConsoleState = null;
 let lastFiles = {};
 let consoleAttempt = null;
 let consoleBuffer = '';
+let consoleInteractions = [];
 let consolePaintHandle = null;
 const CODE_SAVE_DEBOUNCE_MS = 1000;
 const PREVIEW_CONFIG_GLOBAL = '__BLOCKLY_SCORM_PREVIEW_CONFIG__';
@@ -395,23 +396,40 @@ function renderInteractiveConsole() {
   const panel = document.getElementById('output-panel');
   if (!panel) return;
 
+  // The transcript renders as one chip row per line (a left gutter holds the
+  // in/out badges, `user-select: none`, so a selection copies only program
+  // text). The input bar docks below the transcript instead of overlaying it.
   panel.innerHTML = `
     <div class="console-shell">
-      <div class="console-transcript" data-console-transcript aria-live="polite" aria-label="Program console output"></div>
+      <div class="console-transcript" data-console-transcript aria-live="polite" aria-label="Program console output">
+        <div class="console-stream" data-console-stream></div>
+      </div>
+      <div id="input-dialog" class="input-dialog hidden" aria-hidden="true">
+        <label id="input-dialog-label" class="input-dialog-prompt" for="input-dialog-field">Input</label>
+        <input id="input-dialog-field" class="input-dialog-field" type="text" autocomplete="off" spellcheck="false">
+        <div class="input-dialog-actions">
+          <button id="btn-input-ok" class="btn btn-primary" type="button">OK</button>
+          <button id="btn-input-cancel" class="btn btn-secondary" type="button">Cancel</button>
+        </div>
+      </div>
     </div>
   `;
 
   interactiveConsoleState = {
     transcriptEl: panel.querySelector('[data-console-transcript]'),
+    streamEl: panel.querySelector('[data-console-stream]'),
     isRunning: true,
   };
   consoleAttempt = null;
   consoleBuffer = '';
+  // Answers stay valid across replays: the program re-runs deterministically
+  // (seeded RNG), so every recorded prompt offset lands in the new buffer too.
+  consoleInteractions = [];
   cancelConsolePaint();
 }
 
 function handleRunStdout(text, attempt) {
-  if (!interactiveConsoleState?.transcriptEl) return;
+  if (!interactiveConsoleState?.streamEl) return;
   // A new attempt replaces the buffer: replays show one coherent transcript.
   if (consoleAttempt === null || attempt !== consoleAttempt) {
     consoleAttempt = attempt;
@@ -437,10 +455,10 @@ function queueConsolePaint() {
 }
 
 function paintConsole() {
-  const el = interactiveConsoleState?.transcriptEl;
-  if (!el) return;
-  el.textContent = consoleBuffer;
-  el.scrollTop = el.scrollHeight;
+  const state = interactiveConsoleState;
+  if (!state?.streamEl) return;
+  syncStreamRows(state.streamEl, buildStreamRows());
+  state.transcriptEl.scrollTop = state.transcriptEl.scrollHeight;
 }
 
 function flushConsolePaint() {
@@ -448,15 +466,105 @@ function flushConsolePaint() {
   paintConsole();
 }
 
-function appendConsoleRow(type, text, badge) {
-  const state = interactiveConsoleState;
-  if (!state?.transcriptEl) return;
+/**
+ * The current attempt's stdout split into display rows: output one row per
+ * physical line, and each answered `input()` as a single row carrying the
+ * program's prompt plus the student's answer (the answer belongs at the end of
+ * the prompt line, like a terminal echo).
+ */
+function buildStreamRows() {
+  const rows = [];
+  let pos = 0;
+  for (const interaction of consoleInteractions) {
+    const start = resolveInteractionStart(consoleBuffer, pos, interaction);
+    if (start === -1) continue;
+    pushOutputRows(rows, consoleBuffer.slice(pos, start));
+    rows.push(buildInteractionRow(interaction));
+    pos = start + interaction.prompt.length;
+  }
+  pushOutputRows(rows, consoleBuffer.slice(pos));
+  return rows;
+}
 
-  // Any queued full-buffer paint would wipe rows appended below.
-  flushConsolePaint();
+/**
+ * Where the prompt for `interaction` starts inside the buffer. Recorded
+ * offsets are exact for a deterministic replay; a search fallback covers
+ * programs whose output shifts between attempts.
+ */
+function resolveInteractionStart(buffer, pos, interaction) {
+  const start = interaction.offset - interaction.prompt.length;
+  if (start >= pos && buffer.slice(start, interaction.offset) === interaction.prompt) {
+    return start;
+  }
+  if (interaction.prompt) {
+    const found = buffer.indexOf(interaction.prompt, pos);
+    if (found !== -1) return found;
+  }
+  return -1;
+}
 
+function buildInteractionRow(interaction) {
+  if (interaction.answer === null) {
+    // Cancelled prompts render plain; pending ones keep the blinking cursor.
+    return { type: 'prompt', text: interaction.prompt, awaiting: !interaction.canceled };
+  }
+  const separator = interaction.prompt && !/\s$/.test(interaction.prompt) ? ' ' : '';
+  return {
+    type: 'input',
+    text: `${interaction.prompt}${separator}${interaction.answer}`,
+  };
+}
+
+function pushOutputRows(rows, text) {
+  if (!text) return;
+  const lines = text.split('\n');
+  const partial = lines.pop(); // '' when the text ends exactly on a newline
+  for (const line of lines) rows.push({ type: 'output', text: line });
+  if (partial !== '') rows.push({ type: 'output', text: partial });
+}
+
+/** Diff `rows` onto the stream container: extend/shrink at the first change. */
+function syncStreamRows(container, rows) {
+  const existing = [...container.children];
+  let shared = 0;
+  while (
+    shared < rows.length
+    && shared < existing.length
+    && consoleRowMatches(rows[shared], existing[shared])
+  ) {
+    shared += 1;
+  }
+  for (let i = existing.length - 1; i >= shared; i -= 1) {
+    existing[i].remove();
+  }
+  if (shared < rows.length) {
+    const fragment = document.createDocumentFragment();
+    for (let i = shared; i < rows.length; i += 1) {
+      fragment.appendChild(buildConsoleRow(rows[i].type, rows[i].text, {
+        awaiting: rows[i].awaiting === true,
+      }));
+    }
+    container.appendChild(fragment);
+  }
+}
+
+function consoleRowMatches(row, node) {
+  if (!node.classList.contains(`console-entry-${row.type}`)) return false;
+  if (node.classList.contains('is-awaiting-input') !== (row.awaiting === true)) return false;
+  return node.querySelector('.console-entry-value')?.textContent === displayRowText(row);
+}
+
+/** The exact textContent a row node ends up with (empty text renders as ' '). */
+function displayRowText(row) {
+  const base = row.text === '' || row.text == null ? ' ' : String(row.text);
+  if (row.awaiting !== true) return base;
+  const separator = row.text && !/\s$/.test(row.text) ? ' ' : '';
+  return base + separator;
+}
+
+function buildConsoleRow(type, text, { awaiting = false, badge } = {}) {
   const row = document.createElement('div');
-  row.className = `console-entry console-entry-${type}`;
+  row.className = `console-entry console-entry-${type}${awaiting ? ' is-awaiting-input' : ''}`;
 
   const badgeEl = document.createElement('span');
   badgeEl.className = 'console-entry-badge';
@@ -466,23 +574,67 @@ function appendConsoleRow(type, text, badge) {
   valueEl.className = 'console-entry-value';
   valueEl.textContent = text == null || text === '' ? ' ' : String(text);
 
+  if (awaiting) {
+    const separator = text && !/\s$/.test(text) ? ' ' : '';
+    const suffix = document.createElement('span');
+    suffix.className = 'console-prompt-suffix';
+    const cursor = document.createElement('span');
+    cursor.className = 'console-cursor';
+    cursor.setAttribute('aria-hidden', 'true');
+    suffix.append(separator, cursor);
+    valueEl.appendChild(suffix);
+  }
+
   row.append(badgeEl, valueEl);
-  state.transcriptEl.appendChild(row);
+  return row;
+}
+
+function appendConsoleRow(type, text, badge) {
+  const state = interactiveConsoleState;
+  if (!state?.transcriptEl) return;
+
+  // Any queued stream paint would render stale rows around this one.
+  flushConsolePaint();
+  state.transcriptEl.appendChild(buildConsoleRow(type, text, { badge }));
   state.transcriptEl.scrollTop = state.transcriptEl.scrollHeight;
+}
+
+/** Drop blinking cursors/awaiting state from prompt rows at run end. */
+function clearAwaitingPrompts() {
+  const state = interactiveConsoleState;
+  if (!state?.transcriptEl) return;
+  state.transcriptEl.querySelectorAll('.console-entry.is-awaiting-input').forEach((entry) => {
+    entry.classList.remove('is-awaiting-input');
+    entry.querySelector('.console-prompt-suffix')?.remove();
+  });
 }
 
 function appendTraceback(traceback) {
   const state = interactiveConsoleState;
   if (!state?.transcriptEl) return;
+  flushConsolePaint();
+
+  // Tracebacks keep their <pre> formatting but sit in the gutter grid so the
+  // whole transcript shares one content column.
+  const row = document.createElement('div');
+  row.className = 'console-entry console-entry-error';
+  const badgeEl = document.createElement('span');
+  badgeEl.className = 'console-entry-badge';
+  badgeEl.textContent = 'err';
   const pre = document.createElement('pre');
   pre.className = 'output-console';
   pre.textContent = traceback;
-  state.transcriptEl.appendChild(pre);
+  row.append(badgeEl, pre);
+  state.transcriptEl.appendChild(row);
   state.transcriptEl.scrollTop = state.transcriptEl.scrollHeight;
 }
 
 function getConsoleBadge(type) {
   switch (type) {
+    case 'prompt':
+      return 'in?';
+    case 'input':
+      return 'in';
     case 'error':
       return 'err';
     case 'status':
@@ -498,6 +650,13 @@ function finalizeInteractiveConsole(execution) {
   closeInputDialog();
   if (!interactiveConsoleState) return;
   interactiveConsoleState.isRunning = false;
+  // A prompt that never got an answer renders plain from here on — otherwise
+  // the flush below (and any later paint) would resurrect the waiting cursor.
+  for (const interaction of consoleInteractions) {
+    if (interaction.answer === null) interaction.canceled = true;
+  }
+  flushConsolePaint();
+  clearAwaitingPrompts();
 
   const status = execution.status
     || (execution.cancelled ? 'cancelled' : 'error');
@@ -526,6 +685,14 @@ function closeInputDialog() {
 }
 
 async function requestConsoleInput(message) {
+  const promptText = String(message ?? '');
+  // The prompt has already streamed into this attempt's buffer (the worker
+  // posts stdout before need-input), so the buffer length marks where the
+  // answer echoes back on the next replay.
+  const interaction = { offset: consoleBuffer.length, prompt: promptText, answer: null, canceled: false };
+  consoleInteractions.push(interaction);
+  queueConsolePaint();
+
   return new Promise((resolve) => {
     const dialog = document.getElementById('input-dialog');
     const promptEl = document.getElementById('input-dialog-label');
@@ -533,6 +700,7 @@ async function requestConsoleInput(message) {
     const okBtn = document.getElementById('btn-input-ok');
     const cancelBtn = document.getElementById('btn-input-cancel');
     if (!dialog || !promptEl || !field || !okBtn || !cancelBtn) {
+      interaction.canceled = true;
       resolve(null);
       return;
     }
@@ -549,6 +717,12 @@ async function requestConsoleInput(message) {
       cancelBtn.onclick = null;
       field.onkeydown = null;
       close();
+      if (value === null || value === undefined) {
+        interaction.canceled = true;
+      } else {
+        interaction.answer = String(value);
+      }
+      queueConsolePaint();
       resolve(value);
     };
 

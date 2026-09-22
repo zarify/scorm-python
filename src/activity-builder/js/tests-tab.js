@@ -30,7 +30,7 @@ import {
   VALID_VARIABLE_COMPARISONS,
   VALID_VARIABLE_TYPES_FOR_TESTS,
 } from '../../shared/config-validator.js';
-import { createDefaultCondition, renderConditionEditor } from './condition-builder.js';
+import { createDefaultCondition, destroyConditionEditors, renderConditionEditor } from './condition-builder.js';
 import { enableListReordering, getSelectionIndexAfterMove, moveListItem } from './list-reorder.js';
 import {
   getFileStatePath,
@@ -328,6 +328,7 @@ function moveTest(fromIndex, targetIndex, position) {
 function renderTestEditor() {
   const container = document.getElementById('test-editor-content');
   if (!container) return;
+  destroyConditionEditors(container);
   const list = tests();
 
   if (selectedTestIndex < 0 || selectedTestIndex >= list.length) {

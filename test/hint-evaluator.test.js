@@ -147,18 +147,19 @@ test('a visible hint carries the fields the panel renders', async () => {
   ]);
 });
 
-test('a hint without priority, display mode or style falls back to 1/triggered/null', async () => {
+test('a hint without priority, display mode or style falls back to 1/checklist/null', async () => {
   const bare = hint({ id: 'hint_1', trigger: { conditions: null } });
   delete bare.priority;
+  delete bare.display_mode;
 
   const { visibleHints } = await evaluateHints(
-    [bare],
+    bare ? [bare] : [],
     createHintState(),
     CODE_CHANGE,
     fakeEvaluator().evaluateCondition,
   );
   assert.deepEqual(visibleHints, [
-    { id: 'hint_1', message: 'Try something.', priority: 1, display_mode: 'triggered', style: null },
+    { id: 'hint_1', message: 'Try something.', priority: 1, display_mode: 'checklist', style: null },
   ]);
 });
 

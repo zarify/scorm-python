@@ -54,7 +54,7 @@ export async function evaluateHints(hints, state, event, evaluateCondition) {
         id: hint.id,
         message: hint.message,
         priority: hint.priority || 1,
-        display_mode: hint.display_mode || 'triggered',
+        display_mode: hint.display_mode || 'checklist',
         style: hint.style || null,
       });
     }

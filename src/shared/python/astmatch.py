@@ -7,7 +7,10 @@ Wildcards
 ---------
 ``_``
     A bare underscore ``Name`` in expression position matches **any single
-    expression node**; it never binds.
+    expression node**; it never binds. In **statement position** (a bare ``_``
+    statement, e.g. a loop body) it matches **any single statement** — so
+    ``for _ in range(_):`` + ``_`` as the body also matches a body of
+    ``pass``, ``break``, an assignment, or a nested statement.
 
 ``_name`` (e.g. ``_x``, ``_total`` — matching ``^_[A-Za-z0-9][A-Za-z0-9_]*$``)
     A **named wildcard**: on its first occurrence it binds to the matched
@@ -179,6 +182,18 @@ def _match_node(pat, stu, env):
             if not isinstance(stu, ast.expr):
                 return None
             return _bind(pat.id, stu, env)
+
+    # Statement position: a bare `_` expression statement matches ANY single
+    # statement, so a loop/suite body written as `_` also matches `pass`,
+    # `break`, assignments, nested loops, … (an expression wildcard alone
+    # would only match statements whose value is an expression).
+    if (
+        isinstance(pat, ast.Expr)
+        and isinstance(pat.value, ast.Name)
+        and pat.value.id == "_"
+        and isinstance(stu, ast.stmt)
+    ):
+        return env
 
     if type(pat) is not type(stu):
         return None

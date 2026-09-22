@@ -294,13 +294,10 @@ function renderChecklistHints(checklistHints) {
 }
 
 function getHintDisplayMode(hint) {
-  if (hint?.display_mode === 'checklist') {
-    return 'checklist';
-  }
   if (hint?.display_mode === 'triggered') {
     return 'triggered';
   }
-  return 'triggered';
+  return 'checklist';
 }
 
 async function notifyHintRequestAvailability(resolveCondition) {

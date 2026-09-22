@@ -257,8 +257,8 @@
         "display_mode": {
           "type": "string",
           "enum": ["triggered", "checklist"],
-          "default": "triggered",
-          "description": "triggered: hide this hint until it fires; checklist: always show it in the sidebar and tick it off when triggered"
+          "default": "checklist",
+          "description": "checklist (default): always visible, ticked off when triggered; triggered: hide this hint until it fires"
         },
         "priority": {
           "type": "integer",

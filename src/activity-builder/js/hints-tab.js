@@ -17,7 +17,7 @@ import {
   VALID_HINT_EVENTS,
   VALID_HINT_STYLES,
 } from '../../shared/config-validator.js';
-import { createDefaultCondition, renderConditionEditor } from './condition-builder.js';
+import { createDefaultCondition, destroyConditionEditors, renderConditionEditor } from './condition-builder.js';
 import {
   enableListReordering,
   getSelectionIndexAfterMove,
@@ -99,7 +99,7 @@ function addHint() {
       event: 'code_change',
       conditions: createDefaultCondition('source_empty'),
     },
-    display_mode: 'triggered',
+    display_mode: 'checklist',
     message: 'New hint — edit the message and conditions.',
     priority: cfg.hints.length + 1,
     delay_seconds: 0,
@@ -193,6 +193,7 @@ function moveHint(fromIndex, targetIndex, position) {
 function renderHintEditor() {
   const container = document.getElementById('hint-editor-content');
   if (!container) return;
+  destroyConditionEditors(container);
 
   const hints = getConfig().hints || [];
   if (selectedHintIndex < 0 || selectedHintIndex >= hints.length) {
@@ -410,7 +411,7 @@ function updateHintListTitle(index, hint) {
 }
 
 function getHintDisplayMode(hint) {
-  return hint?.display_mode === 'checklist' ? 'checklist' : 'triggered';
+  return hint?.display_mode === 'triggered' ? 'triggered' : 'checklist';
 }
 
 function getTriggerEvent(hint) {

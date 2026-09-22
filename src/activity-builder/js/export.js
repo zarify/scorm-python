@@ -237,17 +237,6 @@ function generateIndexHtml(config) {
       </div>
     </section>
   </div>
-  <div id="input-dialog" class="input-dialog hidden" aria-hidden="true">
-    <div class="input-dialog-backdrop"></div>
-    <section class="input-dialog-dialog" role="dialog" aria-modal="true" aria-labelledby="input-dialog-label">
-      <label id="input-dialog-label" class="input-dialog-prompt" for="input-dialog-field">Input</label>
-      <input id="input-dialog-field" class="input-dialog-field" type="text" autocomplete="off" spellcheck="false">
-      <div class="input-dialog-actions">
-        <button id="btn-input-ok" class="btn btn-primary" type="button">OK</button>
-        <button id="btn-input-cancel" class="btn btn-secondary" type="button">Cancel</button>
-      </div>
-    </section>
-  </div>
   <script src="js/app.bundle.js"></script>
 </body>
 </html>`;
