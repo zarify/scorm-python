@@ -925,12 +925,20 @@ def _analyze_spec(spec):
         tree = ast.parse(source, filename=STUDENT_FILENAME)
     except SyntaxError as exc:
         detail = f"SyntaxError: {exc.msg} (line {exc.lineno})"
+        results = {}
+        for entry in conditions:
+            key = str(entry.get("key", ""))
+            condition = entry.get("condition")
+            condition = condition if isinstance(condition, dict) else {}
+            if astmatch.condition_needs_ast(condition):
+                results[key] = {"passed": False, "detail": detail}
+            else:
+                # Text-only conditions (regex / empty checks) never touch the
+                # AST — evaluate them so text hints can tick while mid-typing.
+                results[key] = astmatch.evaluate_condition(None, condition, source)
         return {
             "syntaxError": {"message": exc.msg, "line": exc.lineno},
-            "results": {
-                str(entry.get("key", "")): {"passed": False, "detail": detail}
-                for entry in conditions
-            },
+            "results": results,
         }
 
     results = {}

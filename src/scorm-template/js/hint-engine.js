@@ -5,8 +5,9 @@
  * conditions of all candidate hints (event match, running delay, active hints
  * that can invalidate, and every manual hint that gates the button) into ONE
  * engine.analyze call, then resolves the batch in a single evaluateHints pass.
- * A syntax error mid-typing fails the batch gracefully — hints simply don't
- * fire while the source doesn't parse.
+ * A syntax error mid-typing fails the batch gracefully: AST-dependent hints
+ * don't fire while the source doesn't parse, while text-only conditions
+ * (source_regex / source_empty) still evaluate against the raw source.
  */
 
 import {
@@ -166,14 +167,19 @@ async function batchEvaluateConditions(eventType, source) {
       conditions: entries.map(({ key, condition }) => ({ key, condition })),
     });
     for (const { key, condition } of entries) {
-      if (analysis.syntaxError) {
+      // The analyzer already fills every key — including text-only conditions
+      // it evaluated despite a syntax error. Fall back to a syntax-error
+      // failure only for keys it could not report at all.
+      const outcome = analysis.results[key];
+      if (outcome) {
+        results.set(condition, outcome);
+      } else if (analysis.syntaxError) {
         results.set(condition, {
           passed: false,
           detail: `SyntaxError: ${analysis.syntaxError.message} (line ${analysis.syntaxError.line})`,
         });
       } else {
-        results.set(condition, analysis.results[key]
-          || { passed: false, detail: 'Condition was not evaluated.' });
+        results.set(condition, { passed: false, detail: 'Condition was not evaluated.' });
       }
     }
   } catch (err) {

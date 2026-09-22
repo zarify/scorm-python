@@ -437,20 +437,75 @@ class AnalyzeTests(unittest.TestCase):
         self.assertIsNone(result["syntaxError"])
         self.assertTrue(result["results"]["c1"]["passed"])
 
-    def test_syntax_error_fails_every_key_without_crashing(self):
+    def test_syntax_error_fails_ast_keys_but_evaluates_text_only_ones(self):
         result = self.analyze(
             "def (:",
             [
                 {"key": "c1", "condition": {"type": "ast_pattern", "pattern": "print(...)"}},
                 {"key": "c2", "condition": {"type": "source_empty"}},
+                {"key": "c3", "condition": {"type": "source_regex", "pattern": "def"}},
             ],
         )
         self.assertIsNotNone(result["syntaxError"])
-        self.assertEqual(set(result["results"]), {"c1", "c2"})
-        for key in ("c1", "c2"):
-            self.assertFalse(result["results"][key]["passed"])
-            self.assertIn("SyntaxError:", result["results"][key]["detail"])
-            self.assertIn("(line 1)", result["results"][key]["detail"])
+        self.assertEqual(set(result["results"]), {"c1", "c2", "c3"})
+        self.assertFalse(result["results"]["c1"]["passed"])
+        self.assertIn("SyntaxError:", result["results"]["c1"]["detail"])
+        self.assertIn("(line 1)", result["results"]["c1"]["detail"])
+        # Text-only conditions never touch the AST: evaluated for real even
+        # though the file does not parse.
+        self.assertFalse(result["results"]["c2"]["passed"])
+        self.assertEqual(result["results"]["c2"]["detail"], "source is not empty")
+        self.assertTrue(result["results"]["c3"]["passed"])
+
+    def test_regex_condition_matches_before_an_empty_for_body_parses(self):
+        # The reported flow: the header line alone is an IndentationError, but
+        # the regex is already in the source and must tick.
+        source = "for q in range(len(questions)):"
+        result = self.analyze(
+            source,
+            [{
+                "key": "h",
+                "condition": {
+                    "type": "source_regex",
+                    "pattern": r"for \w+ in range\(len\(\w+\)\):",
+                },
+            }],
+        )
+        self.assertIsNotNone(result["syntaxError"])
+        self.assertTrue(result["results"]["h"]["passed"])
+
+    def test_composite_of_text_only_conditions_evaluates_while_unparsed(self):
+        result = self.analyze(
+            "for q in range(3):",
+            [{
+                "key": "h",
+                "condition": {
+                    "type": "any",
+                    "conditions": [
+                        {"type": "source_regex", "pattern": "while"},
+                        {"type": "source_regex", "pattern": r"for \w+"},
+                    ],
+                },
+            }],
+        )
+        self.assertTrue(result["results"]["h"]["passed"])
+
+    def test_composite_containing_an_ast_pattern_still_waits_for_a_parse(self):
+        result = self.analyze(
+            "for q in range(3):",
+            [{
+                "key": "h",
+                "condition": {
+                    "type": "all",
+                    "conditions": [
+                        {"type": "source_regex", "pattern": "for"},
+                        {"type": "ast_pattern", "pattern": "for _ in _:\n    _"},
+                    ],
+                },
+            }],
+        )
+        self.assertFalse(result["results"]["h"]["passed"])
+        self.assertIn("SyntaxError:", result["results"]["h"]["detail"])
 
 
 class ValidatePatternsTests(unittest.TestCase):

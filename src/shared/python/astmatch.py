@@ -57,7 +57,8 @@ handling ``ast_pattern`` (``min_count``/``max_count``), ``source_regex``,
 import ast
 import re
 
-__all__ = ["PatternError", "validate", "count_matches", "evaluate_condition"]
+__all__ = ["PatternError", "validate", "count_matches", "evaluate_condition",
+           "condition_needs_ast"]
 
 
 class PatternError(ValueError):
@@ -398,6 +399,28 @@ def _as_int(value, default):
     if isinstance(value, bool) or not isinstance(value, int):
         return default
     return value
+
+
+def condition_needs_ast(condition):
+    """True when evaluating this condition requires a parsed student AST.
+
+    ``source_regex`` and ``source_empty`` only read the raw source, so they
+    stay evaluable while the student's file does not parse (an empty ``for``
+    body, mid-typing). Anything containing an ``ast_pattern`` — or an unknown
+    shape, kept on the strict path — transitively needs the tree.
+    """
+    if not isinstance(condition, dict):
+        return True
+    ctype = condition.get("type")
+    if ctype == "ast_pattern":
+        return True
+    if ctype in ("source_regex", "source_empty"):
+        return False
+    if ctype in ("all", "any", "none"):
+        children = condition.get("conditions")
+        if isinstance(children, list):
+            return any(condition_needs_ast(child) for child in children)
+    return True
 
 
 def evaluate_condition(source_ast, condition, raw_source=None):

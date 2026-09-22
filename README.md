@@ -34,7 +34,7 @@ suite, network for the first Pyodide fetch (cached in `vendor/pyodide/`).
 | `npm run dev` | Watch + serve the builder on port 3000 |
 | `npm test` | Node test suite (validator, normalizer, test-config, hint evaluator, codec, SCORM wrapper, inline markdown) |
 | `npm run test:python` | Python unittest suite for the AST matcher and execution harness (`test-py/`) |
-| `npm run test:browser` | Full build + nine Playwright end-to-end scenarios driving the real Pyodide runtime |
+| `npm run test:browser` | Full build + 21 Playwright end-to-end scenarios (8 files) driving the real Pyodide runtime |
 
 ## Workflow
 
@@ -112,6 +112,13 @@ hint's conditions into a single analyzer call.
 | `all` / `any` / `none` | `conditions` (≥1 child) | AND / OR / NOT over child conditions |
 
 Unknown condition types are rejected with `Unknown condition type '<x>'`.
+
+While the source does not parse (e.g. a `for` header typed before its body),
+text-only conditions (`source_regex`, `source_empty`, and composites of only
+those) still evaluate against the raw source — so a matching regex hint ticks
+mid-typing. Conditions that transitively contain an `ast_pattern` report the
+`SyntaxError` until the file parses, and graded `code_structure` tests keep
+failing while the code is unparseable.
 
 ### evaluation
 `require_previous_test_pass` (default `true` — later tests lock until earlier ones

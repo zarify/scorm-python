@@ -84,6 +84,11 @@ Build/serve: `scripts/build.js` (esbuild IIFE bundles + asset copies),
   params) is rewritten before parsing — CPython rejects `...` as a parameter list;
   a bare `_` matches any expression in expression position and any statement in
   statement position (so a `_` loop body matches `pass`).
+- **Syntax errors narrow, not blank, the analyzer**: text-only conditions
+  (`source_regex`/`source_empty`, or composites of only those) evaluate against the
+  raw source while the file does not parse; conditions containing an `ast_pattern`
+  report the SyntaxError until it parses. Graded `code_structure` tests still fail
+  on unparseable code (`assertCodeStructure` short-circuits on `syntaxError`).
 - **Input replay**: `input()` with an empty queue in run mode raises `need-input`; the whole
   program re-runs. The session seed arrives via `need-input.seed` and is passed back as
   `spec.seed` so `random` stays stable across attempts. `input()` prompts go to the **console
@@ -168,8 +173,8 @@ node --test test/<file>.test.js  # one suite
 ## Testing & QA
 
 - Three suites plus browser scenarios; **all four must be green** before handing work back:
-  `npm test` (227), `npm run test:python` (73), `npm run build && npm run export` (both modes),
-  `npm run test:browser` (20 across 7 files).
+  `npm test` (227), `npm run test:python` (76), `npm run build && npm run export` (both modes),
+  `npm run test:browser` (21 across 8 files).
 - Browser tests **skip** (not fail) when no Chrome/Chromium launches; `PLAYWRIGHT_CHANNEL`
   overrides the channel. They drive the real Pyodide runtime against a mock LMS
   (`test/browser/helpers/mock-lms.js`, localStorage-backed `window.API`).
