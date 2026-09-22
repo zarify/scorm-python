@@ -1,0 +1,37 @@
+{
+  "name": "moodle-python-scorm",
+  "version": "1.0.0",
+  "description": "Configurable Python-SCORM activity engine for Moodle with browser-based activity builder",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "build:scorm": "node scripts/build.js --target=scorm",
+    "build:builder": "node scripts/build.js --target=builder",
+    "export": "node scripts/export-scorm.js",
+    "dev": "node scripts/dev.js",
+    "test": "node --test \"test/*.test.js\"",
+    "test:python": "python3 -m unittest discover -s test-py -v",
+    "test:browser": "npm run build && node --test \"test/browser/*.test.js\""
+  },
+  "keywords": [
+    "python",
+    "scorm",
+    "moodle",
+    "education"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@codemirror/lang-python": "^6.2.1",
+    "@codemirror/view": "^6.43.13",
+    "codemirror": "^6.0.2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.4",
+    "jszip": "^3.10.1",
+    "playwright": "^1.63.0"
+  },
+  "allowScripts": {
+    "esbuild@0.27.7": true
+  }
+}

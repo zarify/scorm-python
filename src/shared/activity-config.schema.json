@@ -1,0 +1,677 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://moodle-python-scorm/activity-config.schema.json",
+  "title": "Python Activity Configuration",
+  "description": "Configuration for a Python-SCORM activity in Moodle. Structural documentation only: config-validator.js is the runtime gate and additionally rejects unknown properties (which draft-07 cannot express once oneOf branches share fields).",
+  "type": "object",
+  "required": ["metadata", "python_setup", "evaluation"],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["activity_id", "title"],
+      "properties": {
+        "activity_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$",
+          "description": "Unique identifier for the activity (lowercase, underscores, no spaces)"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Display title shown to students"
+        },
+        "version": {
+          "type": "string",
+          "default": "1.0",
+          "description": "Config version for migration support"
+        },
+        "description": {
+          "type": "string",
+          "description": "Brief description of the activity"
+        }
+      }
+    },
+    "instructions": {
+      "type": "object",
+      "properties": {
+        "main": {
+          "type": "string",
+          "description": "Primary instruction text shown to students"
+        },
+        "steps": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Ordered step-by-step guidance"
+        }
+      }
+    },
+    "ui_settings": {
+      "type": "object",
+      "properties": {
+        "show_hint_panel": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable student-facing hints in the UI"
+        },
+        "suspend_data_limit": {
+          "type": "integer",
+          "minimum": 512,
+          "default": 4096,
+          "description": "Characters the runtime may use in cmi.suspend_data. SCORM 1.2 specifies 4096; raise it only for an LMS known to accept more (each write is verified and the runtime falls back automatically)"
+        }
+      }
+    },
+    "python_setup": {
+      "type": "object",
+      "properties": {
+        "starter_code": {
+          "type": "string",
+          "default": "",
+          "description": "Python source the editor opens with"
+        },
+        "files": {
+          "type": "array",
+          "maxItems": 50,
+          "default": [],
+          "items": { "$ref": "#/definitions/activity_file" },
+          "description": "Files seeded into the student's in-memory filesystem before every run (and re-seeded on each replay attempt)"
+        },
+        "packages": {
+          "type": "array",
+          "default": [],
+          "items": { "type": "string", "enum": ["pillow"] },
+          "description": "Optional Pyodide packages bundled with the activity. Only Pillow ships; numpy and network packages are out of scope"
+        },
+        "pyodide_base_url": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute http(s) URL of a host serving the pinned Pyodide file set (with CORS). Empty = use the runtime bundled in the export. A trailing slash is normalized by the engine"
+        }
+      }
+    },
+    "hints": {
+      "type": "array",
+      "default": [],
+      "items": { "$ref": "#/definitions/hint" }
+    },
+    "evaluation": {
+      "type": "object",
+      "required": ["test_cases"],
+      "properties": {
+        "feedback_on_all_pass": {
+          "type": "string",
+          "description": "Optional subtitle shown in the results header when every automated test passes"
+        },
+        "require_previous_test_pass": {
+          "type": "boolean",
+          "default": true,
+          "description": "If true, tests run in order and later tests are skipped until earlier tests pass"
+        },
+        "test_cases": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/test_case" }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "activity_file": {
+      "type": "object",
+      "required": ["path"],
+      "description": "One seeded file. Provide exactly one of content (UTF-8 text) or content_base64 (binary).",
+      "properties": {
+        "path": {
+          "type": "string",
+          "maxLength": 256,
+          "pattern": "^[A-Za-z0-9_./-]+$",
+          "description": "Path relative to the working directory: no leading \"/\", no \"..\" segment"
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 262144,
+          "description": "UTF-8 text content"
+        },
+        "content_base64": {
+          "type": "string",
+          "maxLength": 262144,
+          "description": "Base64-encoded binary content"
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "required": ["type"],
+      "oneOf": [
+        {
+          "properties": {
+            "type": { "const": "ast_pattern" },
+            "pattern": {
+              "type": "string",
+              "description": "Python source with wildcards: `_` matches any single expression, `_name` is a named wildcard that must match the same subtree everywhere, `...` matches any number of statements or call arguments"
+            },
+            "min_count": { "type": "integer", "minimum": 1, "default": 1 },
+            "max_count": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Optional upper bound; must be greater than or equal to min_count"
+            }
+          },
+          "required": ["type", "pattern"]
+        },
+        {
+          "properties": {
+            "type": { "const": "source_regex" },
+            "pattern": {
+              "type": "string",
+              "description": "Python regular expression searched anywhere in the raw source"
+            },
+            "case_sensitive": { "type": "boolean", "default": true },
+            "regex_flags": {
+              "type": "string",
+              "pattern": "^[ims]*$",
+              "default": "",
+              "description": "Any of i, m, s; `i` is redundant with case_sensitive false"
+            }
+          },
+          "required": ["type", "pattern"]
+        },
+        {
+          "properties": {
+            "type": { "const": "source_empty" }
+          },
+          "required": ["type"]
+        },
+        {
+          "properties": {
+            "type": { "const": "all" },
+            "conditions": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/condition" },
+              "minItems": 1
+            }
+          },
+          "required": ["type", "conditions"]
+        },
+        {
+          "properties": {
+            "type": { "const": "any" },
+            "conditions": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/condition" },
+              "minItems": 1
+            }
+          },
+          "required": ["type", "conditions"]
+        },
+        {
+          "properties": {
+            "type": { "const": "none" },
+            "conditions": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/condition" },
+              "minItems": 1
+            }
+          },
+          "required": ["type", "conditions"]
+        }
+      ]
+    },
+    "hint": {
+      "type": "object",
+      "required": ["id", "trigger", "message"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique hint identifier"
+        },
+        "trigger": {
+          "type": "object",
+          "required": ["event"],
+          "properties": {
+            "event": {
+              "type": "string",
+              "enum": ["code_change", "test_fail", "manual"]
+            },
+            "conditions": {
+              "$ref": "#/definitions/condition",
+              "description": "Source conditions (required for the code_change event)"
+            },
+            "after_attempts": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "description": "Only trigger after this many failed test runs"
+            },
+            "invalidate_on_condition_false": {
+              "type": "boolean",
+              "default": false,
+              "description": "Hide the hint again when its condition stops holding"
+            }
+          }
+        },
+        "message": {
+          "type": "string",
+          "description": "Hint text shown to the student"
+        },
+        "display_mode": {
+          "type": "string",
+          "enum": ["triggered", "checklist"],
+          "default": "triggered",
+          "description": "triggered: hide this hint until it fires; checklist: always show it in the sidebar and tick it off when triggered"
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "Higher priority hints suppress lower ones"
+        },
+        "delay_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Delay before showing after trigger condition is met"
+        },
+        "show_once": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, don't re-show after student dismisses"
+        },
+        "style": {
+          "type": "string",
+          "enum": ["", "success", "warning", "error"],
+          "default": "",
+          "description": "Optional card style"
+        }
+      }
+    },
+    "text_assertion": {
+      "type": "object",
+      "description": "Assertion over a captured text transcript (stdout or prompt text).",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether this assertion is checked or ignored"
+        },
+        "expected": {
+          "type": "string",
+          "description": "Expected transcript"
+        },
+        "match_mode": {
+          "type": "string",
+          "enum": ["exact", "contains", "regex"],
+          "default": "exact"
+        },
+        "show_expected": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the expected value to the student when this assertion fails"
+        },
+        "show_actual": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the actual captured value to the student when this assertion fails"
+        },
+        "success_message": {
+          "type": "string",
+          "description": "Optional student-facing success message for this assertion"
+        },
+        "failure_message": {
+          "type": "string",
+          "description": "Optional student-facing failure message for this assertion"
+        }
+      }
+    },
+    "prompt_text_assertion": {
+      "description": "Prompt transcript assertion. Unlike stdout, each captured prompt is compared on its own, so match_any_item is available.",
+      "allOf": [
+        { "$ref": "#/definitions/text_assertion" },
+        {
+          "type": "object",
+          "properties": {
+            "match_any_item": {
+              "type": "boolean",
+              "default": false,
+              "description": "When true, compare against any individual captured prompt instead of the combined transcript"
+            }
+          }
+        }
+      ]
+    },
+    "runtime_execution_context": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "type": "string",
+          "enum": ["main", "function"],
+          "default": "main"
+        },
+        "function_name": {
+          "type": "string",
+          "description": "Function name to call when scope is \"function\""
+        },
+        "arguments": {
+          "type": "array",
+          "default": [],
+          "description": "Arguments passed to the function call when scope is \"function\""
+        }
+      }
+    },
+    "file_csv_assertions": {
+      "type": "object",
+      "properties": {
+        "row_count": { "type": "integer", "minimum": 0 },
+        "row_count_comparison": {
+          "type": "string",
+          "enum": ["equals", "gt", "lt", "gte", "lte"],
+          "default": "equals"
+        },
+        "header": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Expected first row, compared exactly"
+        },
+        "cells": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/file_csv_cell" }
+        }
+      }
+    },
+    "file_csv_cell": {
+      "type": "object",
+      "required": ["row", "column"],
+      "properties": {
+        "row": { "type": "integer", "minimum": 0 },
+        "column": { "type": "integer", "minimum": 0 },
+        "expected_value": {},
+        "comparison": {
+          "type": "string",
+          "enum": ["equals", "gt", "lt", "gte", "lte", "contains"],
+          "default": "equals"
+        },
+        "expected_type": {
+          "type": "string",
+          "enum": ["any", "int", "float", "bool", "string", "list", "tuple", "dict", "null"],
+          "default": "any"
+        }
+      }
+    },
+    "variable_list_index_check": {
+      "type": "object",
+      "properties": {
+        "index": { "type": "integer", "minimum": 0 },
+        "expected_value": {},
+        "expected_type": {
+          "type": "string",
+          "enum": ["any", "int", "float", "bool", "string", "list", "tuple", "dict", "null"],
+          "default": "any"
+        }
+      },
+      "required": ["index"]
+    },
+    "variable_list_assertions": {
+      "type": "object",
+      "properties": {
+        "length_enabled": { "type": "boolean", "default": false },
+        "length_value": { "type": "integer", "minimum": 0, "default": 0 },
+        "length_comparison": {
+          "type": "string",
+          "enum": ["equals", "gt", "lt", "gte", "lte"],
+          "default": "equals"
+        },
+        "values_enabled": { "type": "boolean", "default": false },
+        "values_match_mode": {
+          "type": "string",
+          "enum": [
+            "exact_order",
+            "same_values_any_order",
+            "expected_subset_of_actual",
+            "expected_superset_of_actual"
+          ],
+          "default": "exact_order"
+        },
+        "expected_values": {
+          "type": "array",
+          "default": []
+        },
+        "item_types_enabled": { "type": "boolean", "default": false },
+        "item_type_mode": {
+          "type": "string",
+          "enum": ["all", "some", "none"],
+          "default": "all"
+        },
+        "expected_item_types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["int", "float", "bool", "string", "list", "tuple", "dict", "null"]
+          },
+          "default": []
+        },
+        "index_checks": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/variable_list_index_check" },
+          "default": []
+        }
+      }
+    },
+    "function_return_assertion": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the function should be called and its return value checked"
+        },
+        "arguments": {
+          "type": "array",
+          "default": [],
+          "description": "Arguments passed to the function call"
+        },
+        "expected_type": {
+          "type": "string",
+          "enum": ["any", "int", "float", "bool", "string", "list", "tuple", "dict", "null"],
+          "default": "any"
+        },
+        "value_assertion_enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "expected_value": {},
+        "comparison": {
+          "type": "string",
+          "enum": ["equals", "gt", "lt", "gte", "lte", "contains"],
+          "default": "equals"
+        },
+        "show_coerced_value_hint": {
+          "type": "boolean",
+          "default": false
+        },
+        "show_expected": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the expected return value to the student when this assertion fails"
+        },
+        "show_actual": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the actual return value to the student when this assertion fails"
+        },
+        "success_message": {
+          "type": "string",
+          "description": "Optional student-facing success message for this return assertion"
+        },
+        "failure_message": {
+          "type": "string",
+          "description": "Optional student-facing failure message for this return assertion"
+        },
+        "list_assertions": {
+          "$ref": "#/definitions/variable_list_assertions"
+        }
+      }
+    },
+    "test_case": {
+      "type": "object",
+      "required": ["id", "type", "points"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["stdout_match", "code_structure", "variable_state", "function_state", "file_state"]
+        },
+        "points": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Points awarded when the test passes"
+        },
+        "feedback_on_pass": { "type": "string" },
+        "feedback_on_fail": { "type": "string" }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "type": { "const": "stdout_match" },
+            "prompt_inputs": {
+              "type": "array",
+              "items": { "type": "string" },
+              "default": []
+            },
+            "strict_prompt_inputs": {
+              "type": "boolean",
+              "default": true,
+              "description": "If true, extra or missing input() calls fail the test"
+            },
+            "output_assertion": { "$ref": "#/definitions/text_assertion" },
+            "prompt_assertion": { "$ref": "#/definitions/prompt_text_assertion" },
+            "execution_context": { "$ref": "#/definitions/runtime_execution_context" },
+            "setup_files": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/activity_file" },
+              "description": "Files seeded for this test, merged over python_setup.files (test entry wins on path collision)"
+            }
+          },
+          "required": ["type"]
+        },
+        {
+          "properties": {
+            "type": { "const": "code_structure" },
+            "conditions": { "$ref": "#/definitions/condition" }
+          },
+          "required": ["type", "conditions"]
+        },
+        {
+          "properties": {
+            "type": { "const": "variable_state" },
+            "prompt_inputs": {
+              "type": "array",
+              "items": { "type": "string" },
+              "default": []
+            },
+            "strict_prompt_inputs": {
+              "type": "boolean",
+              "default": true
+            },
+            "variable_name": { "type": "string" },
+            "expected_type": {
+              "type": "string",
+              "enum": ["any", "int", "float", "bool", "string", "list", "tuple", "dict", "null"],
+              "default": "any"
+            },
+            "value_assertion_enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "expected_value": {},
+            "comparison": {
+              "type": "string",
+              "enum": ["equals", "gt", "lt", "gte", "lte", "contains"],
+              "default": "equals"
+            },
+            "show_coerced_value_hint": {
+              "type": "boolean",
+              "default": false
+            },
+            "list_assertions": {
+              "$ref": "#/definitions/variable_list_assertions"
+            },
+            "setup_files": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/activity_file" }
+            }
+          },
+          "required": ["type", "variable_name"]
+        },
+        {
+          "properties": {
+            "type": { "const": "function_state" },
+            "prompt_inputs": {
+              "type": "array",
+              "items": { "type": "string" },
+              "default": []
+            },
+            "strict_prompt_inputs": {
+              "type": "boolean",
+              "default": false
+            },
+            "function_name": { "type": "string" },
+            "parameter_count_enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "parameter_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "return_assertion": {
+              "$ref": "#/definitions/function_return_assertion"
+            },
+            "setup_files": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/activity_file" }
+            }
+          },
+          "required": ["type", "function_name"]
+        },
+        {
+          "properties": {
+            "type": { "const": "file_state" },
+            "path": {
+              "type": "string",
+              "description": "Path of the file the student is expected to write"
+            },
+            "exists": {
+              "type": "boolean",
+              "default": true
+            },
+            "format": {
+              "type": "string",
+              "enum": ["text", "csv", "binary"],
+              "default": "text"
+            },
+            "content_assertion": {
+              "description": "Assertion over the written file's UTF-8 contents. Text format only.",
+              "$ref": "#/definitions/text_assertion"
+            },
+            "csv_assertions": {
+              "$ref": "#/definitions/file_csv_assertions"
+            },
+            "prompt_inputs": {
+              "type": "array",
+              "items": { "type": "string" },
+              "default": []
+            },
+            "strict_prompt_inputs": {
+              "type": "boolean",
+              "default": true
+            },
+            "setup_files": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/activity_file" }
+            }
+          },
+          "required": ["type", "path"]
+        }
+      ]
+    }
+  }
+}

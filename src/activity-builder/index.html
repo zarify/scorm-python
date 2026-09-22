@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Python Activity Builder</title>
+  <link rel="stylesheet" href="css/builder.css">
+</head>
+<body>
+  <div id="builder-app">
+    <header id="builder-header">
+      <h1>🐍 Python Activity Builder</h1>
+      <div id="header-actions">
+        <button id="btn-import" class="btn btn-secondary" title="Import existing config">📂 Import</button>
+        <button id="btn-export-json" class="btn btn-primary" title="Download activity_config.json">💾 Export JSON</button>
+        <button id="btn-export-scorm" class="btn btn-accent" title="Download SCORM .zip package">📦 Export SCORM</button>
+        <input type="file" id="file-import" accept=".json" style="display:none">
+      </div>
+    </header>
+
+    <div id="file-mode-banner" class="file-mode-banner hidden">
+      Serve this folder over HTTP (<code>npm run dev</code>) to use Python preview and pattern
+      validation; config editing, JSON export, and SCORM export still work.
+    </div>
+
+    <nav id="tab-nav">
+      <button class="tab-btn active" data-tab="config">⚙️ Config</button>
+      <button class="tab-btn" data-tab="code">🐍 Code</button>
+      <button class="tab-btn" data-tab="hints">💡 Hints</button>
+      <button class="tab-btn" data-tab="tests">✅ Tests</button>
+      <button class="tab-btn" data-tab="preview">👁️ Preview</button>
+      <button class="tab-btn" data-tab="export">📦 Export</button>
+    </nav>
+
+    <main id="tab-content">
+      <!-- Config Tab -->
+      <section id="tab-config" class="tab-panel active">
+        <div class="form-section">
+          <h2>Activity Metadata</h2>
+          <div class="form-group">
+            <label for="cfg-title">Title</label>
+            <input type="text" id="cfg-title" placeholder="e.g. Basic For-Loops">
+          </div>
+          <div class="form-group">
+            <label for="cfg-activity-id">Activity ID</label>
+            <input type="text" id="cfg-activity-id" placeholder="auto-generated from title" readonly>
+            <small>Lowercase identifier, auto-generated from title</small>
+          </div>
+          <div class="form-group">
+            <label for="cfg-version">Version</label>
+            <input type="text" id="cfg-version" value="1.0" placeholder="1.0">
+          </div>
+          <div class="form-group">
+            <label for="cfg-description">Description</label>
+            <textarea id="cfg-description" rows="3" placeholder="Brief description of the activity"></textarea>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h2>Instructions</h2>
+          <div class="form-group">
+            <label for="cfg-instructions-main">Main Instruction</label>
+            <textarea id="cfg-instructions-main" rows="3" placeholder="Primary instruction shown to students"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Step-by-step guidance</label>
+            <div id="instruction-steps-list"></div>
+            <button id="btn-add-step" class="btn btn-small btn-secondary">+ Add Step</button>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h2>UI Settings</h2>
+          <div class="form-row">
+            <label class="checkbox-label">
+              <input type="checkbox" id="cfg-show-hints" checked>
+              Enable hints
+            </label>
+          </div>
+          <div class="form-group">
+            <label for="cfg-suspend-data-limit">Suspend data limit (characters)</label>
+            <input type="number" id="cfg-suspend-data-limit" min="512" step="256" placeholder="4096">
+            <small>
+              Space reserved for saved student code in <code>cmi.suspend_data</code>. SCORM 1.2 specifies 4096;
+              larger programs are also kept in this browser's IndexedDB.
+            </small>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h2>Results</h2>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="cfg-require-previous-test-pass" checked>
+              Require each test to pass before the next test runs
+            </label>
+            <small>When enabled, tests stop at the first failure and students only see that other tests remain unpassed.</small>
+          </div>
+          <div class="form-group">
+            <label for="cfg-feedback-on-all-pass">All tests passed subtitle</label>
+            <textarea id="cfg-feedback-on-all-pass" rows="2" placeholder="Optional message shown beneath the success heading when all tests pass"></textarea>
+            <small>Shown only when every automated check passes.</small>
+          </div>
+        </div>
+      </section>
+
+      <!-- Code Tab -->
+      <section id="tab-code" class="tab-panel">
+        <div class="form-section">
+          <h2>Starter Code</h2>
+          <p class="tab-note">The code students see in the editor when the activity opens (or resets).</p>
+          <div id="starter-code-editor"></div>
+        </div>
+
+        <div class="form-section">
+          <h2>Activity Files</h2>
+          <p class="tab-note">
+            Files seeded into the student's working directory before every run.
+            Paths are relative (no leading <code>/</code>, no <code>..</code>), max 50 files.
+          </p>
+          <div id="activity-files-list"></div>
+          <div class="file-row-actions">
+            <button id="btn-add-activity-file" class="btn btn-small btn-secondary">+ Add File</button>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h2>Packages</h2>
+          <div id="packages-list"></div>
+        </div>
+
+        <div class="form-section">
+          <h2>Python Runtime</h2>
+          <div class="form-group">
+            <label for="pyodide-base-url">Pyodide base URL</label>
+            <input type="text" id="pyodide-base-url" placeholder="Leave empty to bundle Python into the export">
+            <small>
+              Empty bundles the pinned runtime into every SCORM package (~12–15&nbsp;MB). A non-empty
+              absolute <code>http(s)</code> URL must serve the same pinned file set with CORS headers.
+              Saved in this browser for next time.
+            </small>
+          </div>
+        </div>
+      </section>
+
+      <!-- Hints Tab -->
+      <section id="tab-hints" class="tab-panel">
+        <div id="hints-layout">
+          <div id="hint-list-panel">
+            <h2>Hints</h2>
+            <div id="hint-list"></div>
+            <button id="btn-add-hint" class="btn btn-small btn-secondary">+ Add Hint</button>
+          </div>
+          <div id="hint-editor-panel">
+            <h2>Edit Hint</h2>
+            <div id="hint-editor-content">
+              <p class="placeholder-text">Select a hint to edit, or add a new one.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tests Tab -->
+      <section id="tab-tests" class="tab-panel">
+        <div id="tests-layout">
+          <div id="test-list-panel">
+            <h2>Test Cases</h2>
+            <div id="test-list"></div>
+            <button id="btn-add-test" class="btn btn-small btn-secondary">+ Add Test</button>
+            <div id="weight-indicator"></div>
+          </div>
+          <div id="test-editor-panel">
+            <h2>Edit Test</h2>
+            <div id="test-editor-content">
+              <p class="placeholder-text">Select a test case to edit, or add a new one.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Preview Tab -->
+      <section id="tab-preview" class="tab-panel">
+        <div id="preview-controls">
+          <button id="btn-refresh-preview" class="btn btn-primary">🔄 Reload Preview</button>
+          <span class="preview-note">This runs the real student view so you can run code, check tests, request hints, and use the input dialog.</span>
+        </div>
+        <div id="preview-file-notice" class="preview-file-notice hidden">
+          Serve this folder over HTTP (<code>npm run dev</code>) to use the Python preview.
+        </div>
+        <div id="preview-frame-container">
+          <iframe id="preview-iframe"></iframe>
+        </div>
+      </section>
+
+      <!-- Export Tab -->
+      <section id="tab-export" class="tab-panel">
+        <div class="form-section">
+          <h2>Export</h2>
+          <p class="tab-note">
+            JSON exports the activity config (works everywhere). SCORM export validates the config
+            and every AST pattern first, then builds a Moodle-uploadable package — the Python runtime
+            is bundled unless a Pyodide base URL is set on the Code tab.
+          </p>
+          <div id="export-status" class="export-status"></div>
+          <div class="form-row">
+            <button id="btn-export-json-tab" class="btn btn-primary" type="button">💾 Export JSON</button>
+            <button id="btn-export-scorm-tab" class="btn btn-accent" type="button">📦 Export SCORM</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Validation toast -->
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="runtime-assets.js"></script>
+  <script src="js/builder.bundle.js"></script>
+</body>
+</html>

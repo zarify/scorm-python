@@ -1,0 +1,130 @@
+{
+  "metadata": {
+    "activity_id": "greet_input",
+    "title": "Greet by Name",
+    "version": "1.0",
+    "description": "Read a name with input() and greet the person."
+  },
+  "instructions": {
+    "main": "Ask the user for their name, then print a greeting.",
+    "steps": [
+      "Read a name from input() and store it in a variable",
+      "Print exactly: Hello, <name>!",
+      "Define a greet(name) function that returns the greeting",
+      "Click 'Check' to test your solution"
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "# Ask for a name and greet the person.\n# 1. name = input(\"What is your name?\")\n# 2. print(\"Hello, \" + name + \"!\")\n# 3. def greet(name):\n#        return \"Hello, \" + name + \"!\"\n",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint_any_function",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "def _(...): ...",
+          "min_count": 1
+        },
+        "invalidate_on_condition_false": false
+      },
+      "message": "Define a function called `greet` with `def greet(name):`.",
+      "priority": 1,
+      "delay_seconds": 5,
+      "show_once": false
+    },
+    {
+      "id": "hint_need_input",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "_x = input(...)",
+          "min_count": 1
+        },
+        "invalidate_on_condition_false": false
+      },
+      "message": "Read the name first: `name = input(\"What is your name?\")`.",
+      "priority": 2,
+      "delay_seconds": 10,
+      "show_once": false
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "Perfect — input, greeting, and structure all check out.",
+    "test_cases": [
+      {
+        "id": "test_greeting_output",
+        "type": "stdout_match",
+        "points": 10,
+        "feedback_on_pass": "The greeting matches exactly.",
+        "feedback_on_fail": "Print exactly `Hello, Ada!` — capital H, comma + space after Hello, exclamation mark.",
+        "prompt_inputs": ["Ada"],
+        "strict_prompt_inputs": true,
+        "output_assertion": {
+          "enabled": true,
+          "expected": "Hello, Ada!\n",
+          "match_mode": "exact"
+        },
+        "prompt_assertion": {
+          "enabled": true,
+          "expected": "^What is your name\\?$",
+          "match_mode": "regex",
+          "match_any_item": true
+        },
+        "execution_context": { "scope": "main" }
+      },
+      {
+        "id": "test_greet_function",
+        "type": "function_state",
+        "points": 10,
+        "feedback_on_pass": "greet() returns the right greeting.",
+        "feedback_on_fail": "Define `def greet(name):` so it returns `Hello, Ada!` for greet(\"Ada\").",
+        "function_name": "greet",
+        "parameter_count_enabled": true,
+        "parameter_count": 1,
+        "return_assertion": {
+          "enabled": true,
+          "arguments": ["Ada"],
+          "expected_type": "string",
+          "value_assertion_enabled": true,
+          "expected_value": "Hello, Ada!",
+          "comparison": "equals",
+          "show_expected": true,
+          "show_actual": true
+        }
+      },
+      {
+        "id": "test_same_variable",
+        "type": "code_structure",
+        "points": 5,
+        "feedback_on_pass": "You read the input and printed the same variable.",
+        "feedback_on_fail": "Read the name into a variable with input(), then print that same variable.",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "_x = input(...)\n...\nprint(_x)",
+          "min_count": 1
+        }
+      },
+      {
+        "id": "test_prompt_count",
+        "type": "variable_state",
+        "points": 5,
+        "feedback_on_pass": "The name variable holds the answer that was typed.",
+        "feedback_on_fail": "Store the answer in a variable called `name`.",
+        "variable_name": "name",
+        "expected_type": "string",
+        "value_assertion_enabled": false
+      }
+    ]
+  }
+}

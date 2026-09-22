@@ -1,0 +1,73 @@
+{
+  "metadata": {
+    "activity_id": "hello_world",
+    "title": "Hello World",
+    "version": "1.0",
+    "description": "Your first Python activity — print Hello, World!"
+  },
+  "instructions": {
+    "main": "Write a Python program that prints 'Hello, World!' to the console.",
+    "steps": [
+      "Type a print statement in the editor",
+      "Make sure the text matches exactly: Hello, World!",
+      "Click 'Check' to test your solution"
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint_need_print",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "source_empty"
+        }
+      },
+      "message": "Start by writing a print statement: `print(\"Hello, World!\")`",
+      "priority": 1,
+      "delay_seconds": 5,
+      "show_once": false
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "Excellent work — every automated check passed.",
+    "test_cases": [
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 10,
+        "feedback_on_pass": "Your program prints exactly the expected text.",
+        "feedback_on_fail": "Make sure you're printing exactly: Hello, World! (with capital H and W, comma after Hello, and exclamation mark)",
+        "output_assertion": {
+          "enabled": true,
+          "expected": "Hello, World!\n",
+          "match_mode": "exact"
+        },
+        "prompt_inputs": [],
+        "strict_prompt_inputs": true
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 2,
+        "feedback_on_pass": "You used a print statement.",
+        "feedback_on_fail": "Your program needs to print something with print(...)",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "print(...)",
+          "min_count": 1
+        }
+      }
+    ]
+  }
+}

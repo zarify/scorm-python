@@ -1,0 +1,840 @@
+/* Python SCORM Activity — Student UI */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f5f5f5;
+  color: #333;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Status bar */
+.status-bar {
+  padding: 8px 16px;
+  font-size: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.status-info { background: #e3f2fd; color: #1565c0; }
+.status-error { background: #ffebee; color: #c62828; }
+.status-success { background: #e8f5e9; color: #2e7d32; }
+.status-warning { background: #fff8e1; color: #8d6e00; }
+
+/* Main layout */
+#main-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  gap: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Panels */
+.panel {
+  background: #fff;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+#left-panel {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #ddd;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+#left-panel .panel {
+  overflow: visible;
+}
+
+#instructions-panel {
+  flex: 1;
+}
+
+#instructions-panel h2 {
+  font-size: 18px;
+  margin-bottom: 12px;
+  color: #1a1a1a;
+}
+
+.instruction-main {
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.instruction-steps {
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.instruction-steps li {
+  margin-bottom: 4px;
+}
+
+.formatted-text code {
+  background: #eef2f7;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.95em;
+  word-break: break-word;
+}
+
+/* Hints inline within instructions */
+.hints-inline {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+.hints-inline h3 {
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.hint-empty {
+  font-size: 13px;
+  color: #999;
+  font-style: italic;
+}
+
+.hint-section + .hint-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.hint-card {
+  background: #fff8e1;
+  border: 1px solid #ffecb3;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  position: relative;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Style variants for hints (configurable via hint.style) */
+.hint-card.hint-success, .hint-card.is-success {
+  background: #e8f5e9;
+  border-color: #c8e6c9;
+  color: #2e7d32;
+}
+
+.hint-card.hint-warning {
+  background: #fff8e1;
+  border-color: #ffecb3;
+  color: #8a6d3b;
+}
+
+.hint-card.hint-error {
+  background: #ffebee;
+  border-color: #ffcdd2;
+  color: #b71c1c;
+}
+
+.hint-checklist {
+  list-style: none;
+  padding: 0;
+}
+
+.hint-checklist-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  color: #475569;
+}
+
+.hint-checklist-item.is-complete {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.hint-checklist-icon {
+  flex-shrink: 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.hint-checklist-message {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Workspace area */
+#workspace-area {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+#editor {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: #fff;
+}
+
+#editor .cm-editor {
+  height: 100%;
+  font-size: 14px;
+}
+
+#editor .cm-scroller {
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+#controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: #fff;
+  border-top: 1px solid #ddd;
+  flex-shrink: 0;
+}
+
+#btn-request-hint {
+  display: none;
+}
+
+/* Stop must stay clickable while the results modal (z-index 1000) shows the
+   console — the input dialog (1200) still layers above it, so its Cancel is
+   the stop path while a prompt is parked. */
+#btn-stop {
+  position: relative;
+  z-index: 1100;
+}
+
+/* Buttons */
+.btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #1976d2;
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #1565c0;
+}
+
+.btn-secondary {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #bdbdbd;
+}
+
+/* Results modal */
+body.modal-open {
+  overflow: hidden;
+}
+
+.results-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.results-modal.hidden {
+  display: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.results-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(15, 23, 42, 0.56);
+  cursor: pointer;
+}
+
+.results-modal-dialog {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(960px, 100%);
+  max-height: min(760px, calc(100vh - 32px));
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+}
+
+.results-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #ddd;
+  background: #f8fafc;
+}
+
+.results-modal-header h2 {
+  font-size: 16px;
+  color: #1a1a1a;
+}
+
+.results-modal-close {
+  padding: 8px 12px;
+  min-width: 44px;
+}
+
+.results-modal-close:disabled,
+.results-modal-backdrop:disabled {
+  cursor: not-allowed;
+}
+
+.results-modal-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+#output-panel {
+  flex: 1 1 auto;
+}
+
+.output-placeholder {
+  color: #999;
+  font-style: italic;
+  font-size: 14px;
+}
+
+.console-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: min(50vh, 420px);
+}
+
+.console-transcript {
+  --console-gutter-width: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 260px;
+  max-height: min(50vh, 420px);
+  overflow-y: auto;
+  padding: 12px;
+  border-radius: 10px;
+  background: #111827;
+  color: #e5eefc;
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.console-entry {
+  display: grid;
+  grid-template-columns: var(--console-gutter-width) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.console-entry-badge {
+  width: var(--console-gutter-width);
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.console-entry-value {
+  display: block;
+  min-width: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.console-entry-output .console-entry-value {
+  color: #e2e8f0;
+}
+
+.console-entry-prompt .console-entry-badge {
+  background: rgba(96, 165, 250, 0.18);
+  color: #bfdbfe;
+}
+
+.console-entry-prompt .console-entry-value {
+  color: #dbeafe;
+}
+
+.console-entry-input .console-entry-badge {
+  background: rgba(52, 211, 153, 0.16);
+  color: #a7f3d0;
+}
+
+.console-entry-input .console-entry-value {
+  color: #dcfce7;
+}
+
+.console-entry-error .console-entry-badge {
+  background: rgba(248, 113, 113, 0.2);
+  color: #fecaca;
+}
+
+.console-entry-error .console-entry-value {
+  color: #fecaca;
+}
+
+.console-entry-status .console-entry-badge {
+  background: rgba(250, 204, 21, 0.18);
+  color: #fde68a;
+}
+
+.console-entry-status .console-entry-value {
+  color: #fef3c7;
+}
+
+.console-cursor {
+  width: 9px;
+  height: 1.15em;
+  display: inline-block;
+  vertical-align: text-bottom;
+  border-radius: 2px;
+  background: #f8fafc;
+  animation: console-cursor-blink 1s steps(1, end) infinite;
+}
+
+@keyframes console-cursor-blink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+
+.console-prompt-suffix {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  vertical-align: baseline;
+}
+
+.console-input-bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #dbe4f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.console-input-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.console-input-bar[data-input-type="number"] .console-input-label::after {
+  content: " (number)";
+  color: #64748b;
+  font-weight: 500;
+}
+
+.console-input-field {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+}
+
+.console-input-field:focus {
+  outline: 2px solid #93c5fd;
+  outline-offset: 1px;
+  border-color: #60a5fa;
+}
+
+.console-submit-button {
+  padding-inline: 16px;
+}
+
+.output-section,
+.results-section {
+  margin-bottom: 16px;
+}
+
+.output-section h3,
+.prompt-log h4,
+#code-panel h3 {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.output-console {
+  background: #263238;
+  color: #eeffff;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-bottom: 12px;
+}
+
+.output-empty {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.prompt-log {
+  background: #f8f9fb;
+  border: 1px solid #e3e7ee;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.prompt-list {
+  list-style: none;
+  padding: 0;
+}
+
+.prompt-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.prompt-item:last-child {
+  margin-bottom: 0;
+}
+
+.prompt-arrow {
+  color: #666;
+}
+
+.prompt-item code {
+  background: #eef2f7;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.run-error {
+  background: #ffebee;
+  color: #b71c1c;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+/* Results */
+.results-header {
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+
+.results-title {
+  font-size: 15px;
+}
+
+.results-subtitle {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.results-pass {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.results-fail {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.results-list {
+  list-style: none;
+  padding: 0;
+}
+
+.results-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.result-pass .result-icon { color: #2e7d32; }
+.result-fail .result-icon { color: #c62828; }
+
+.result-detail-section,
+.result-detail-note {
+  margin: 8px 0 0 24px;
+}
+
+.result-detail-title {
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.result-detail-value {
+  padding: 10px 12px;
+  background: #f8f9fb;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.result-detail-note {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Responsive: stack on small screens */
+@media (max-width: 900px) {
+  #main-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  #left-panel {
+    border: none;
+    border-bottom: 1px solid #ddd;
+    max-height: 200px;
+  }
+
+  .results-modal {
+    padding: 8px;
+  }
+
+  .results-modal-dialog {
+    max-height: calc(100vh - 16px);
+    width: 100%;
+  }
+
+  .console-transcript {
+    --console-gutter-width: 64px;
+  }
+
+  .console-input-bar {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Stop button */
+.btn-danger {
+  background: #c62828;
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #b71c1c;
+}
+
+/* Results modal tabs (Console | Files) */
+.results-modal-tabs {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  justify-content: center;
+}
+
+.results-tab {
+  padding: 6px 14px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  color: #555;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.results-tab.active {
+  background: #1976d2;
+  border-color: #1976d2;
+  color: #fff;
+}
+
+/* Files panel */
+.file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.file-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.file-item-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: none;
+  font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  color: #1a1a1a;
+  cursor: pointer;
+  text-align: left;
+}
+
+.file-item-header:hover {
+  background: #eef2f7;
+}
+
+.file-item-size {
+  margin-left: auto;
+  color: #64748b;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.file-item-binary {
+  color: #8d6e00;
+}
+
+.file-item-body {
+  padding: 10px 12px;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.file-item-body pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+/* Input dialog (interactive run prompts) */
+.input-dialog {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1200;
+}
+
+.input-dialog.hidden {
+  display: none;
+}
+
+.input-dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.56);
+}
+
+.input-dialog-dialog {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(420px, 100%);
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+}
+
+.input-dialog-prompt {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.input-dialog-field {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.input-dialog-field:focus {
+  outline: 2px solid #1976d2;
+  outline-offset: 1px;
+  border-color: #1976d2;
+}
+
+.input-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

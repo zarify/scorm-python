@@ -1,0 +1,134 @@
+{
+  "metadata": {
+    "activity_id": "csv_average",
+    "title": "CSV Average",
+    "version": "1.0",
+    "description": "Read scores from data.csv and write their average to result.csv."
+  },
+  "instructions": {
+    "main": "Read the scores in `data.csv`, compute their average, and write it to `result.csv`.",
+    "steps": [
+      "Open data.csv and read the score column (skip the header row)",
+      "Compute the average of the scores",
+      "Print the average to the console",
+      "Write the average to a new file called result.csv",
+      "Click 'Check' to test your solution"
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [
+      {
+        "path": "data.csv",
+        "content": "name,score\nAda,7\nBo,9\nCy,5\n"
+      }
+    ],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint_use_csv",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "source_regex",
+          "pattern": "csv",
+          "case_sensitive": false,
+          "regex_flags": ""
+        },
+        "invalidate_on_condition_false": false
+      },
+      "message": "The `csv` module is available: `import csv` then `csv.reader(open(\"data.csv\"))`.",
+      "priority": 1,
+      "delay_seconds": 8,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint_need_loop",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "for _ in _:\n    ...",
+          "min_count": 1
+        },
+        "invalidate_on_condition_false": false
+      },
+      "message": "Loop over the rows to collect the scores — remember the first row is a header.",
+      "priority": 2,
+      "delay_seconds": 5,
+      "show_once": false
+    },
+    {
+      "id": "hint_manual_start",
+      "trigger": {
+        "event": "manual"
+      },
+      "message": "Start with `import csv`, open `data.csv`, and skip the first (header) row before summing the scores.",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": true
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "Excellent — the loop, the average, and result.csv are all correct.",
+    "test_cases": [
+      {
+        "id": "test_uses_loop",
+        "type": "code_structure",
+        "points": 5,
+        "feedback_on_pass": "You loop over the data.",
+        "feedback_on_fail": "Use a `for` loop to walk through data.csv.",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "for _ in _:\n    ...",
+          "min_count": 1
+        }
+      },
+      {
+        "id": "test_average_output",
+        "type": "stdout_match",
+        "points": 10,
+        "feedback_on_pass": "The printed average is correct.",
+        "feedback_on_fail": "The average of 7, 9, and 5 is 7 — print it.",
+        "prompt_inputs": [],
+        "strict_prompt_inputs": true,
+        "output_assertion": {
+          "enabled": true,
+          "expected": "7",
+          "match_mode": "contains"
+        },
+        "execution_context": { "scope": "main" }
+      },
+      {
+        "id": "test_result_file",
+        "type": "file_state",
+        "points": 10,
+        "feedback_on_pass": "result.csv contains the average.",
+        "feedback_on_fail": "Write the average to result.csv — a single row with the value 7.",
+        "path": "result.csv",
+        "exists": true,
+        "format": "csv",
+        "csv_assertions": {
+          "row_count": 1,
+          "row_count_comparison": "equals",
+          "cells": [
+            { "row": 0, "column": 0, "expected_value": "7", "comparison": "equals", "expected_type": "int" }
+          ]
+        },
+        "prompt_inputs": [],
+        "strict_prompt_inputs": true,
+        "setup_files": [
+          { "path": "seed_note.txt", "content": "setup_files override example: extra seed file for this test only" }
+        ]
+      }
+    ]
+  }
+}
