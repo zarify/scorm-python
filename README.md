@@ -5,10 +5,14 @@ Activity Builder. Students write Python in a CodeMirror 6 editor; their code run
 client-side in **Pyodide 314.0.7 (CPython 3.14)** inside a module Web Worker with
 interruptible loops, captured stdio, `input()` support, and file I/O in Pyodide's
 in-memory filesystem. Authors define starter code, files, hints, and points-based tests
-in a JSON config — no programming required on the authoring side.
+in a JSON config that can be saved and imported for later work. SCORM packages are
+exported from a loaded config.
 
-A sibling project (`scorm-blockly`) provides the same engine for Blockly; this port
-replaces block dragging with source code and structural **AST pattern checks**.
+There is a similar [blockly](https://github.com/zarify/scorm-blockly) editor for
+teaching visual code editing.
+
+Both authoring tools allow for flexible hit and test authoring using various methods
+such as input/output tests, prompt tests, AST (Python) or visual (Blockly) tests.
 
 ## Quick Start
 
@@ -18,6 +22,8 @@ node scripts/fetch-pyodide.js  # one networked fetch of the pinned runtime (also
 npm run build                  # dist/scorm-template + dist/activity-builder
 npm run dev                    # builder at http://localhost:3000
 ```
+
+(or use it directly from [my website](https://headtilt.me/python-scorm/))
 
 Then open the builder, write an activity, hit **Preview**, and **Export SCORM** for a
 Moodle-uploadable `.zip`. Requirements: Node ≥ 20, Python ≥ 3.11 for the local test
@@ -175,6 +181,11 @@ wildcards, and the stub-style header `def _(...): ...` matches any parameter lis
 expression node** in the student's tree; anything else matches **statement sequences**
 at every offset of every statement list (module body and all `body`/`orelse`/`finalbody`
 lists), non-overlapping leftmost-first, summed.
+
+**Note**: `if` and `if-else` are two different things from the AST parser's point of view.
+You can't check for just an `if` and have it also match an `if-else`. Additionally,
+the AST sees `if-elif` as `if-else: if`, so checking selection blocks can be a bit
+tricky.
 
 Worked examples:
 
