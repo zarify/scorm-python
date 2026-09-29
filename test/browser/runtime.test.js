@@ -74,6 +74,9 @@ test('the activity loads, grades a typed program, and reports 100 to the LMS', a
     { timeout: 30_000 },
   );
   assert.match(await page.textContent('#status-bar'), /Activity loaded/);
+  assert.match(await page.textContent('#status-bar'), /Python is ready/);
+  assert.equal(await page.isDisabled('#btn-run'), false);
+  assert.equal(await page.isDisabled('#btn-check'), false);
 
   await typeIntoEditor(page, 'print("Hello, World!")');
   assert.match(await editorText(page), /print\("Hello, World!"\)/, 'the editor accepted the program');

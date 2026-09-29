@@ -45,9 +45,45 @@ function failLoad(err) {
   post({ kind: 'load-error', message: initError });
 }
 
+function installWasmStreamingFallback() {
+  if (self.__PYODIDE_WASM_STREAMING_FALLBACK__) return;
+  self.__PYODIDE_WASM_STREAMING_FALLBACK__ = true;
+
+  const originalInstantiateStreaming = WebAssembly.instantiateStreaming?.bind(WebAssembly);
+  if (originalInstantiateStreaming) {
+    WebAssembly.instantiateStreaming = async (source, imports) => {
+      try {
+        return await originalInstantiateStreaming(source, imports);
+      } catch (err) {
+        const response = await Promise.resolve(source);
+        if (!(response instanceof Response)) throw err;
+        const bytes = await response.arrayBuffer();
+        return WebAssembly.instantiate(bytes, imports);
+      }
+    };
+  }
+
+  const originalCompileStreaming = WebAssembly.compileStreaming?.bind(WebAssembly);
+  if (originalCompileStreaming) {
+    WebAssembly.compileStreaming = async (source) => {
+      try {
+        return await originalCompileStreaming(source);
+      } catch (err) {
+        const response = await Promise.resolve(source);
+        if (!(response instanceof Response)) throw err;
+        const bytes = await response.arrayBuffer();
+        return WebAssembly.compile(bytes);
+      }
+    };
+  }
+}
+
 function ensureInitialized(indexURL, packages) {
   if (initPromise) return initPromise;
   initPromise = (async () => {
+    // Some SCORM viewers serve .wasm as application/octet-stream. Pyodide
+    // prefers streaming compilation, but we can fall back to bytes cleanly.
+    installWasmStreamingFallback();
     const module = await import(`${indexURL}pyodide.mjs`);
     const py = await module.loadPyodide({ indexURL });
 

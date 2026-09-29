@@ -39,8 +39,12 @@ let consoleBuffer = '';
 let consoleInteractions = [];
 let consolePaintHandle = null;
 const CODE_SAVE_DEBOUNCE_MS = 1000;
+const SUSPEND_DATA_SYNC_DEBOUNCE_MS = 10000;
 const PREVIEW_CONFIG_GLOBAL = '__BLOCKLY_SCORM_PREVIEW_CONFIG__';
 const PREVIEW_MODE_GLOBAL = '__BLOCKLY_SCORM_PREVIEW_MODE__';
+let suspendDataSyncTimer = null;
+let pythonReady = false;
+let runtimeAssetBaseUrl = '';
 
 async function init() {
   // 1. SCORM session
@@ -76,6 +80,7 @@ async function init() {
   engine = createPythonEngine({
     onStatus: handleEngineStatus,
     pythonSetup: config.python_setup || {},
+    assetBaseUrl: runtimeAssetBaseUrl,
   });
 
   persistence = createWorkspacePersistence({
@@ -97,13 +102,14 @@ async function init() {
   document.getElementById('btn-check').addEventListener('click', handleCheck);
   document.getElementById('btn-reset').addEventListener('click', handleReset);
   configureHintRequestButton(config);
+  setExecutionButtonState();
 
   window.addEventListener('pagehide', (event) => {
-    flushCodeSave();
     if (event.persisted) {
-      scorm.flushPendingWrites();
+      flushCodeSaveSoon();
       return;
     }
+    flushCodeSaveBeforeUnload();
     scorm.terminate();
   });
   window.addEventListener('pageshow', (event) => {
@@ -112,13 +118,14 @@ async function init() {
   });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'hidden') return;
-    flushCodeSave();
-    scorm.flushPendingWrites();
+    flushCodeSaveSoon();
   });
 
   // 6. Python runtime — hints start once the runtime can analyze conditions.
   try {
     await engine.ready();
+    pythonReady = true;
+    setExecutionButtonState();
   } catch {
     // handleEngineStatus already showed the failure banner.
   }
@@ -135,25 +142,31 @@ async function init() {
   });
 
   if (restoreResult.restored) {
-    showStatus('Welcome back — your saved code has been restored.', 'info');
+    showStatus('Welcome back — Python is ready and your saved code has been restored.', 'info');
     return;
   }
   if (restoreResult.notice) {
-    showStatus(restoreResult.notice, 'warning');
+    showStatus(`Python is ready. ${restoreResult.notice}`, 'warning');
     return;
   }
   showStatus(
     embeddedPreview
-      ? 'Preview ready. Write code, run it, check tests, and request hints.'
-      : 'Activity loaded. Write your program, then click "Run" or "Check".',
+      ? 'Preview ready — Python is loaded. Write code, run it, check tests, and request hints.'
+      : 'Activity loaded — Python is ready. Write your program, then click "Run" or "Check".',
     'info',
   );
 }
 
 function handleEngineStatus(state, detail) {
   if (state === 'loading') {
-    showStatus('Loading Python runtime…', 'info');
+    pythonReady = false;
+    setExecutionButtonState();
+    showStatus('Loading Python… Run and Check will be ready in a moment.', 'info');
+  } else if (state === 'ready') {
+    setExecutionButtonState();
   } else if (state === 'error') {
+    pythonReady = false;
+    setExecutionButtonState();
     showStatus(
       `Python runtime failed to load — check your connection and reload${detail ? ` (${detail})` : ''}`,
       'error',
@@ -196,6 +209,7 @@ function setEditorValue(text) {
 function handleCodeChanged() {
   notifyCodeChange();
   scheduleCodeSave();
+  scheduleSuspendDataSync();
 }
 
 // ---------------------------------------------------------------------------
@@ -236,20 +250,57 @@ function scheduleCodeSave() {
 
 function saveCode() {
   if (!persistence) return;
-  persistence.persist(currentCodeState()).catch((err) => {
-    console.warn('[App] Could not save code:', err.message);
+  persistence.persistLocal(currentCodeState()).catch((err) => {
+    console.warn('[App] Could not save code locally:', err.message);
   });
 }
 
-function flushCodeSave() {
+function scheduleSuspendDataSync() {
+  if (!persistence || scorm.isPreviewMode()) return;
+  clearTimeout(suspendDataSyncTimer);
+  suspendDataSyncTimer = setTimeout(() => {
+    suspendDataSyncTimer = null;
+    syncSuspendData();
+  }, SUSPEND_DATA_SYNC_DEBOUNCE_MS);
+}
+
+function syncSuspendData() {
+  if (!persistence) return;
+  persistence.syncPortable(currentCodeState()).catch((err) => {
+    console.warn('[App] Could not sync LMS progress:', err.message);
+  });
+}
+
+async function flushCodeSaveSoon({ syncPortable = false } = {}) {
   clearTimeout(codeSaveTimer);
   codeSaveTimer = null;
+  if (syncPortable) {
+    clearTimeout(suspendDataSyncTimer);
+    suspendDataSyncTimer = null;
+  }
+  if (!persistence) return;
+  await persistence.persistLocal(currentCodeState()).catch((err) => {
+    console.warn('[App] Could not save code:', err.message);
+  });
+  if (!syncPortable) return;
+  await persistence.syncPortable(currentCodeState()).catch((err) => {
+    console.warn('[App] Could not sync LMS progress:', err.message);
+  });
+}
+
+function flushCodeSaveBeforeUnload() {
+  clearTimeout(codeSaveTimer);
+  codeSaveTimer = null;
+  clearTimeout(suspendDataSyncTimer);
+  suspendDataSyncTimer = null;
   persistence?.persistNow(currentCodeState());
 }
 
 function discardSavedCode() {
   clearTimeout(codeSaveTimer);
   codeSaveTimer = null;
+  clearTimeout(suspendDataSyncTimer);
+  suspendDataSyncTimer = null;
   persistence?.discard(currentCodeState()).catch((err) => {
     console.warn('[App] Could not discard saved code:', err.message);
   });
@@ -262,12 +313,24 @@ function discardSavedCode() {
 async function loadConfig() {
   const previewConfig = window[PREVIEW_CONFIG_GLOBAL];
   if (previewConfig) {
+    runtimeAssetBaseUrl = '';
     return cloneConfig(previewConfig);
   }
 
   const resp = await fetch('config/activity_config.json');
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  runtimeAssetBaseUrl = deriveRuntimeAssetBaseUrl(resp.url);
   return resp.json();
+}
+
+function deriveRuntimeAssetBaseUrl(configUrl) {
+  const text = String(configUrl ?? '').trim();
+  if (!text) return '';
+  try {
+    return new URL('../', text).href;
+  } catch {
+    return '';
+  }
 }
 
 function renderInstructions(cfg) {
@@ -320,6 +383,10 @@ function shouldRequirePreviousTestPass(cfg) {
 // ---------------------------------------------------------------------------
 
 async function handleRun() {
+  if (!pythonReady) {
+    showStatus('Python is still loading. Run will be available once it is ready.', 'info');
+    return;
+  }
   setExecutionButtonState({ running: true });
 
   try {
@@ -804,12 +871,16 @@ function formatBytes(size) {
 // ---------------------------------------------------------------------------
 
 async function handleCheck() {
+  if (!pythonReady) {
+    showStatus('Python is still loading. Check will be available once it is ready.', 'info');
+    return;
+  }
   setExecutionButtonState({ checking: true });
   setResultsModalClosable(false);
 
   try {
     document.activeElement?.blur?.();
-    flushCodeSave();
+    await flushCodeSaveSoon({ syncPortable: true });
 
     const outcome = await runTests({
       testCases: config.evaluation?.test_cases || [],
@@ -1073,9 +1144,10 @@ function setExecutionButtonState({ running = false, checking = false } = {}) {
   const checkBtn = document.getElementById('btn-check');
   const resetBtn = document.getElementById('btn-reset');
   const busy = running || checking;
+  const interactiveReady = pythonReady;
 
   if (runBtn) {
-    runBtn.disabled = busy;
+    runBtn.disabled = busy || !interactiveReady;
     runBtn.textContent = running ? 'Running...' : '▶ Run';
   }
 
@@ -1084,7 +1156,7 @@ function setExecutionButtonState({ running = false, checking = false } = {}) {
   }
 
   if (checkBtn) {
-    checkBtn.disabled = busy;
+    checkBtn.disabled = busy || !interactiveReady;
     checkBtn.textContent = checking ? 'Checking...' : '✓ Check';
   }
 

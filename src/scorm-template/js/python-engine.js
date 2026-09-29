@@ -14,10 +14,12 @@
  *
  * Asset resolution is anchored on the script that loaded this bundle
  * (`document.currentScript` captured at module evaluation — app.bundle.js or
- * builder.bundle.js): the worker sits next to it as `python-worker.js` and the
- * default Pyodide runtime one level up at `../pyodide/`, which resolves
- * identically in the SCORM dist, the builder dist, and the builder's srcdoc
- * preview iframe.
+ * builder.bundle.js). Some SCORM viewers re-host the bundle through a blob URL,
+ * which cannot serve as the base for relative URLs; in that case we fall back
+ * to the document's real package base and reconstruct the bundle URL there.
+ * The worker sits next to the bundle as `python-worker.js` and the default
+ * Pyodide runtime one level up at `../pyodide/`, which resolves identically in
+ * the SCORM dist, the builder dist, and the builder's srcdoc preview iframe.
  */
 
 export const CHECK_PY_SOFT_MS = 3000;
@@ -31,11 +33,48 @@ export const MAX_INPUT_ATTEMPTS = 100;
 
 const TIMEOUT_MESSAGE = 'Execution timed out (possible infinite loop)';
 
-const APP_SCRIPT_BASE = (() => {
-  const src = typeof document !== 'undefined' ? document.currentScript?.src : undefined;
-  if (src) return src;
-  return new URL('js/', document.baseURI).href;
-})();
+const APP_SCRIPT_BASE = resolveBundleUrl();
+
+function resolveBundleUrl() {
+  if (typeof document === 'undefined') return '';
+
+  const candidates = [];
+  if (document.currentScript?.src) {
+    candidates.push(document.currentScript.src);
+  }
+
+  for (const script of Array.from(document.scripts || [])) {
+    if (typeof script?.src === 'string' && script.src) {
+      candidates.push(script.src);
+    }
+  }
+
+  const bundlePattern = /(?:^|\/)(?:app|builder)\.bundle\.js(?:[?#].*)?$/;
+  const preferred = candidates.find((candidate) => bundlePattern.test(candidate) && canResolveRelative(candidate));
+  if (preferred) return preferred;
+
+  const anyUsable = candidates.find(canResolveRelative);
+  if (anyUsable) return anyUsable;
+
+  const base = typeof document.baseURI === 'string' ? document.baseURI : '';
+  if (canResolveRelative(base)) {
+    const previewMode = globalThis.__BLOCKLY_SCORM_PREVIEW_MODE__ === true;
+    const bundlePath = previewMode ? 'app.bundle.js' : 'js/app.bundle.js';
+    return new URL(bundlePath, base).href;
+  }
+
+  return '';
+}
+
+function canResolveRelative(candidate) {
+  if (!candidate) return false;
+  try {
+    new URL('.', candidate);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function normalizeBaseUrl(value) {
   const text = String(value ?? '').trim();
@@ -85,11 +124,15 @@ function inputLimitResult(attempt) {
 /**
  * Create an engine bound to one activity configuration.
  * @param {{ onStatus?: (state: 'loading'|'ready'|'error', detail?: string) => void,
- *           pythonSetup?: { pyodide_base_url?: string, packages?: string[] } }} options
+ *           pythonSetup?: { pyodide_base_url?: string, packages?: string[] },
+ *           assetBaseUrl?: string }} options
  */
-export function createPythonEngine({ onStatus = () => {}, pythonSetup = {} } = {}) {
+export function createPythonEngine({ onStatus = () => {}, pythonSetup = {}, assetBaseUrl = '' } = {}) {
+  const previewMode = globalThis.__BLOCKLY_SCORM_PREVIEW_MODE__ === true;
+  const runtimeBaseUrl = normalizeBaseUrl(assetBaseUrl);
   const indexURL = normalizeBaseUrl(pythonSetup.pyodide_base_url)
-    || new URL('../pyodide/', APP_SCRIPT_BASE).href;
+    || resolveDefaultPyodideUrl({ previewMode, runtimeBaseUrl });
+  const workerUrl = resolveWorkerUrl({ previewMode, runtimeBaseUrl });
   const packages = Array.isArray(pythonSetup.packages) ? pythonSetup.packages : [];
 
   let worker = null;
@@ -175,12 +218,13 @@ export function createPythonEngine({ onStatus = () => {}, pythonSetup = {} } = {
     });
     initWaiters = waiters;
     try {
-      worker = new Worker(new URL('python-worker.js', APP_SCRIPT_BASE), { type: 'module' });
+      worker = new Worker(workerUrl, { type: 'module' });
     } catch (err) {
       initWaiters = null;
       onWorkerFailure(err instanceof Error ? err.message : String(err));
       return waiters.promise;
     }
+
     worker.onmessage = handleMessage;
     worker.onerror = (event) => onWorkerFailure(event?.message || 'Python worker failed to load');
     worker.postMessage({ kind: 'init', indexURL, packages });
@@ -417,4 +461,20 @@ export function createPythonEngine({ onStatus = () => {}, pythonSetup = {} } = {
     cancel,
     dispose,
   };
+}
+
+function resolveDefaultPyodideUrl({ previewMode, runtimeBaseUrl }) {
+  if (runtimeBaseUrl) {
+    const relative = previewMode ? '../pyodide/' : 'pyodide/';
+    return new URL(relative, runtimeBaseUrl).href;
+  }
+  return new URL('../pyodide/', APP_SCRIPT_BASE).href;
+}
+
+function resolveWorkerUrl({ previewMode, runtimeBaseUrl }) {
+  if (runtimeBaseUrl) {
+    const relative = previewMode ? 'python-worker.js' : 'js/python-worker.js';
+    return new URL(relative, runtimeBaseUrl).href;
+  }
+  return new URL('python-worker.js', APP_SCRIPT_BASE).href;
 }
