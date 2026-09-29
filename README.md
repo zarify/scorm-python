@@ -215,11 +215,13 @@ button before export.
   watchdog in run mode (suspended while the input bar is parked). Stop terminates the
   worker outright; the next operation lazily respawns and re-inits. SharedArrayBuffer
   interrupts are unavailable on Moodle (no COOP/COEP control), hence this design.
-- **Two-layer persistence** — `cmi.suspend_data` (4096 chars by default, ASCII-safe
-  `BS1|…` codec with base64/LZW paths) holds the newest `{code}` snapshot that fits;
-  IndexedDB keeps the full-fidelity copy. Restores pick the newest complete snapshot.
+- **Two-layer persistence** — IndexedDB is the fast autosave layer (debounced after code
+  edits), while `cmi.suspend_data` (4096 chars by default, ASCII-safe `BS1|…` codec with
+  base64/LZW paths) is synced less often for portability and on deliberate checkpoints
+  such as **Check** and unload. Restores pick the newest complete snapshot.
 - **SCORM 1.2** — score (`cmi.core.score.raw`), lesson status, and suspend data with
-  write verification and automatic limit fallback.
+  write verification, automatic limit fallback, and commit coalescing so background edits
+  do not turn into a server round-trip on every pause.
 - **Export modes** — *bundled*: the zip carries `pyodide/` (~7 MB) and works
   offline with zero configuration; *external URL*: set `python_setup.pyodide_base_url`
   and the zip drops `pyodide/` (~1 MB), loading the pinned runtime from that URL

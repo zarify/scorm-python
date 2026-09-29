@@ -65,6 +65,23 @@ async function editorText(page) {
     .join('\n'));
 }
 
+async function readIndexedDbRecords(page) {
+  return page.evaluate(async () => {
+    const db = await new Promise((resolve, reject) => {
+      const request = indexedDB.open('python-scorm', 1);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    return new Promise((resolve, reject) => {
+      const request = db.transaction('workspace_state', 'readonly')
+        .objectStore('workspace_state')
+        .getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  });
+}
+
 test('edited code survives a reload through cmi.suspend_data', async (t) => {
   if (skipReason) return t.skip(skipReason);
   const session = await runtimePage({});
@@ -89,7 +106,7 @@ test('edited code survives a reload through cmi.suspend_data', async (t) => {
 
   await session.reload();
   await page.waitForFunction(
-    () => /Welcome back — your saved code has been restored/.test(
+    () => /Welcome back .* your saved code has been restored/.test(
       document.getElementById('status-bar')?.textContent ?? '',
     ),
     undefined,
@@ -98,6 +115,41 @@ test('edited code survives a reload through cmi.suspend_data', async (t) => {
 
   const restored = await editorText(page);
   assert.match(restored, /print\("persisted"\)/, 'the code came back from suspend_data');
+  assert.deepEqual(errors, []);
+});
+
+test('local autosave reaches IndexedDB before suspend_data is synced to the LMS copy', async (t) => {
+  if (skipReason) return t.skip(skipReason);
+  const session = await runtimePage({});
+  const { page, errors } = session;
+  t.after(session.close);
+  await waitUntilLoaded(page);
+
+  await page.click('.cm-content');
+  await page.keyboard.type('print("staged locally first")');
+  await page.waitForTimeout(2500);
+
+  const earlyModel = await readLmsModel(page);
+  assert.equal(
+    earlyModel['cmi.suspend_data'] ?? '',
+    '',
+    'the portable LMS copy is deferred while the local autosave lands first',
+  );
+
+  const records = await readIndexedDbRecords(page);
+  assert.ok(
+    records.some((record) => record?.state?.code?.includes('staged locally first')),
+    'the local IndexedDB autosave already captured the edit',
+  );
+
+  await page.waitForFunction(() => {
+    const raw = localStorage.getItem('mock-scorm-model');
+    if (!raw) return false;
+    const model = JSON.parse(raw);
+    return typeof model['cmi.suspend_data'] === 'string'
+      && model['cmi.suspend_data'].includes('staged locally first');
+  }, undefined, { timeout: 15_000 });
+
   assert.deepEqual(errors, []);
 });
 
@@ -134,7 +186,7 @@ test('a truncated suspend_data write falls back to IndexedDB and still restores'
 
   await session.reload();
   await page.waitForFunction(
-    () => /Welcome back — your saved code has been restored/.test(
+    () => /Welcome back .* your saved code has been restored/.test(
       document.getElementById('status-bar')?.textContent ?? '',
     ),
     undefined,

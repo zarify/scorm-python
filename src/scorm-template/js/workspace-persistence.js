@@ -10,6 +10,11 @@
  *          private windows). Used when the workspace does not fit in layer 1,
  *          and as a higher-fidelity copy otherwise.
  *
+ * The student runtime saves locally first and syncs the LMS copy less often:
+ * frequent saves go to IndexedDB, while `suspend_data` updates are reserved for
+ * quieter checkpoints (periodic sync, Check, unload). That keeps recovery fast
+ * without pushing every small edit through the LMS path.
+ *
  * suspend_data keeps the last snapshot that fits, so a student returning on
  * another device still gets a (possibly older) complete program. When it has
  * never held a full snapshot, it receives a small reference payload instead so
@@ -56,6 +61,7 @@ export function createWorkspacePersistence({
   let indexedDbSavedAt = 0;
   let indexedDbSupported = Boolean(globalThis.indexedDB) && studentId !== '';
   let lastPersistedFingerprint = null;
+  let lastPortableFingerprint = null;
   let hasWarnedAboutRejectedWrite = false;
   let hasWarnedAboutSize = false;
   let dbPromise = null;
@@ -108,18 +114,39 @@ export function createWorkspacePersistence({
     }
 
     lastPersistedFingerprint = fingerprintOf(newest.state);
+    lastPortableFingerprint = null;
+    if (decoded?.kind === 'state' && decoded.state) {
+      lastPortableFingerprint = fingerprintOf(decoded.state);
+    } else if (
+      decoded?.kind === 'reference'
+      && record
+      && Number(record.savedAt) === Number(decoded.savedAt)
+    ) {
+      lastPortableFingerprint = fingerprintOf(record.state);
+    }
     return { state: newest.state, source: newest.source, savedAt: newest.savedAt, notice: null };
   }
 
   /**
-   * Persist the workspace: IndexedDB first (full fidelity), then suspend_data.
+   * Persist the workspace to the fast local layer first.
    * Writes are serialised so a slow IndexedDB write cannot land out of order.
    * @param {object} state
    * @returns {Promise<'suspend_data'|'indexeddb'|'none'>}
    */
-  function persist(state) {
-    const run = () => persistState(state);
+  function persistLocal(state) {
+    const run = () => persistLocalState(state);
     // Resume after a failed write instead of leaving the chain rejected.
+    queue = queue.then(run, run);
+    return queue;
+  }
+
+  /**
+   * Sync the latest local state to the portable LMS layer.
+   * @param {object} state
+   * @returns {Promise<'suspend_data'|'indexeddb'|'none'>}
+   */
+  function syncPortable(state) {
+    const run = () => persistPortableState(state);
     queue = queue.then(run, run);
     return queue;
   }
@@ -134,35 +161,11 @@ export function createWorkspacePersistence({
     if (!scorm.isSessionActive()) return 'none';
 
     const fingerprint = fingerprintOf(state);
-    if (fingerprint === lastPersistedFingerprint) {
+    if (fingerprint === lastPortableFingerprint) {
       return currentSource();
     }
 
-    const payload = encodeWorkspaceState({
-      activityId,
-      state,
-      savedAt: Date.now(),
-      limit: effectiveLimit,
-    });
-
-    if (payload && writePayload(payload)) {
-      lastPersistedFingerprint = fingerprint;
-      return 'suspend_data';
-    }
-
-    if (indexedDbSavedAt > 0) {
-      // The IndexedDB copy is at most one debounce interval old.
-      if (!suspendDataHasState) {
-        writeReference(indexedDbSavedAt);
-      }
-      if (!payload) {
-        warnAboutUnsavedState(payload, true);
-      }
-      return 'indexeddb';
-    }
-
-    warnAboutUnsavedState(payload, false);
-    return 'none';
+    return persistPortableStateNow(state, fingerprint);
   }
 
   /**
@@ -187,10 +190,11 @@ export function createWorkspacePersistence({
     suspendDataHasState = false;
     indexedDbSavedAt = 0;
     lastPersistedFingerprint = state ? fingerprintOf(state) : null;
+    lastPortableFingerprint = null;
     await deleteRecord();
   }
 
-  async function persistState(state) {
+  async function persistLocalState(state) {
     if (!scorm.isSessionActive()) return 'none';
 
     const fingerprint = fingerprintOf(state);
@@ -200,6 +204,27 @@ export function createWorkspacePersistence({
 
     const savedAt = Date.now();
     const indexedDbSaved = await writeRecord(state, savedAt);
+    if (indexedDbSaved) {
+      lastPersistedFingerprint = fingerprint;
+      return currentSource();
+    }
+
+    if (indexedDbSupported) {
+      return 'none';
+    }
+
+    return persistPortableState(state, { fingerprint, savedAt });
+  }
+
+  function persistPortableState(state, { fingerprint = fingerprintOf(state), savedAt = Date.now() } = {}) {
+    if (!scorm.isSessionActive()) return Promise.resolve('none');
+    if (fingerprint === lastPortableFingerprint) {
+      return Promise.resolve(currentSource());
+    }
+    return Promise.resolve(persistPortableStateNow(state, fingerprint, savedAt));
+  }
+
+  function persistPortableStateNow(state, fingerprint, savedAt = Date.now()) {
     const payload = encodeWorkspaceState({
       activityId,
       state,
@@ -209,12 +234,13 @@ export function createWorkspacePersistence({
 
     if (payload && writePayload(payload)) {
       lastPersistedFingerprint = fingerprint;
+      lastPortableFingerprint = fingerprint;
       return 'suspend_data';
     }
 
-    if (indexedDbSaved) {
-      if (!suspendDataHasState) {
-        writeReference(savedAt);
+    if (indexedDbSavedAt > 0) {
+      if (!suspendDataHasState && writeReference(indexedDbSavedAt)) {
+        lastPortableFingerprint = fingerprint;
       }
       if (!payload) {
         // Too large for the LMS: say so once, so the limitation is visible.
@@ -431,7 +457,8 @@ export function createWorkspacePersistence({
 
   return {
     restore,
-    persist,
+    persistLocal,
+    syncPortable,
     persistNow,
     markCurrent,
     discard,
@@ -469,6 +496,7 @@ function hashLocation() {
 }
 
 function fingerprintOf(state) {
+  if (typeof state?.code === 'string') return state.code;
   return JSON.stringify(state);
 }
 
