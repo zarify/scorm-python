@@ -46,6 +46,8 @@ function refreshPreview() {
 
 function buildPreviewHtml(config) {
   const previewBaseHref = new URL('./preview/', window.location.href).href;
+  const previewStyleHref = new URL('style.css', previewBaseHref).href;
+  const previewBundleHref = new URL('app.bundle.js', previewBaseHref).href;
   const title = escapeHtml(config.metadata?.title || 'Python Activity Preview');
   const inlineConfig = serializeForInlineScript(config);
 
@@ -55,8 +57,7 @@ function buildPreviewHtml(config) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
-  <base href="${escapeAttr(previewBaseHref)}">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="${escapeAttr(previewStyleHref)}">
 </head>
 <body>
   <div id="app">
@@ -111,7 +112,7 @@ function buildPreviewHtml(config) {
     window.__BLOCKLY_SCORM_PREVIEW_MODE__ = true;
     window.__BLOCKLY_SCORM_PREVIEW_CONFIG__ = ${inlineConfig};
   </script>
-  <script src="app.bundle.js"></script>
+  <script src="${escapeAttr(previewBundleHref)}"></script>
 </body>
 </html>`;
 }

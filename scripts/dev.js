@@ -27,6 +27,13 @@ function copyIfExists(src, dest) {
   }
 }
 
+function copyPythonRuntime(outDir) {
+  mkdirSync(resolve(outDir, 'js'), { recursive: true });
+  copyIfExists(resolve(SRC, 'shared/python-worker.js'), resolve(outDir, 'js/python-worker.js'));
+  copyIfExists(resolve(SRC, 'shared/python'), resolve(outDir, 'python'));
+  copyIfExists(resolve(ROOT, 'vendor/pyodide'), resolve(outDir, 'pyodide'));
+}
+
 function copyBuilderStaticAssets() {
   mkdirSync(BUILDER_DIST, { recursive: true });
   copyIfExists(resolve(SRC, 'activity-builder/index.html'), resolve(BUILDER_DIST, 'index.html'));
@@ -65,6 +72,8 @@ function writeBuilderRuntimeAssets() {
 async function dev() {
   copyBuilderStaticAssets();
   copyPreviewStyle();
+  copyPythonRuntime(BUILDER_DIST);
+  copyIfExists(resolve(SRC, 'shared/python-worker.js'), resolve(BUILDER_DIST, 'preview/python-worker.js'));
 
   const builderCtx = await esbuild.context({
     entryPoints: [resolve(SRC, 'activity-builder/js/builder-app.js')],
@@ -100,6 +109,8 @@ async function dev() {
   await Promise.all([builderCtx.watch(), previewCtx.watch()]);
   await bundleScormApp(resolve(BUILDER_DIST, 'preview/app.bundle.js'));
   copyPreviewStyle();
+  copyPythonRuntime(BUILDER_DIST);
+  copyIfExists(resolve(SRC, 'shared/python-worker.js'), resolve(BUILDER_DIST, 'preview/python-worker.js'));
   writeBuilderRuntimeAssets();
 
   const { host, port } = await builderCtx.serve({
