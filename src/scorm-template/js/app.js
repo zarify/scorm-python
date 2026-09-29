@@ -21,6 +21,7 @@ import { renderInlineMarkdown } from '../../shared/inline-markdown.js';
 import { validateConfig } from '../../shared/config-validator.js';
 import { normalizeConfig } from '../../shared/config-normalizer.js';
 import { basicSetup } from 'codemirror';
+import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { python } from '@codemirror/lang-python';
 
@@ -34,6 +35,10 @@ let isResultsModalCloseLocked = false;
 let codeSaveTimer = null;
 let interactiveConsoleState = null;
 let lastFiles = {};
+const MAIN_FILE_ID = 'main.py';
+let fileTabs = [];                 // [{ id, record }] sorted by id; id = relative path; never 'main.py'
+const fileTabStates = new Map();   // id -> EditorState; MAIN_FILE_ID entry = student program state
+let activeFileTabId = MAIN_FILE_ID;
 let consoleAttempt = null;
 let consoleBuffer = '';
 let consoleInteractions = [];
@@ -91,6 +96,7 @@ async function init() {
   });
 
   createEditor(document.getElementById('editor'), config.python_setup?.starter_code ?? '');
+  resetFileTabsToSeeds();
   const restoreResult = await restoreSavedCode();
   watchCodeChanges();
   persistence.markCurrent(currentCodeState());
@@ -179,28 +185,30 @@ function handleEngineStatus(state, detail) {
 // ---------------------------------------------------------------------------
 
 function createEditor(container, initialValue) {
-  editor = new EditorView({
-    doc: initialValue || '',
-    parent: container,
-    extensions: [
-      basicSetup,
-      python(),
-      EditorView.lineWrapping,
-      EditorView.updateListener.of((update) => {
-        if (update.docChanged) {
-          handleCodeChanged();
-        }
-      }),
-    ],
-  });
+  const mainExtensions = [
+    basicSetup,
+    python(),
+    EditorView.lineWrapping,
+    EditorView.updateListener.of((update) => {
+      fileTabStates.set(MAIN_FILE_ID, update.state);
+      if (update.docChanged) {
+        handleCodeChanged();
+      }
+    }),
+  ];
+  fileTabStates.set(MAIN_FILE_ID, EditorState.create({ doc: initialValue || '', extensions: mainExtensions }));
+  editor = new EditorView({ state: fileTabStates.get(MAIN_FILE_ID), parent: container });
 }
 
 function editorValue() {
-  return editor ? editor.state.doc.toString() : '';
+  if (!editor) return '';
+  const state = activeFileTabId === MAIN_FILE_ID ? editor.state : fileTabStates.get(MAIN_FILE_ID);
+  return state ? state.doc.toString() : '';
 }
 
 function setEditorValue(text) {
   if (!editor) return;
+  activateFileTab(MAIN_FILE_ID);
   editor.dispatch({
     changes: { from: 0, to: editor.state.doc.length, insert: text ?? '' },
   });
@@ -418,7 +426,8 @@ async function handleRun() {
     });
 
     finalizeInteractiveConsole(execution);
-    renderFilesPanel(execution.files || {});
+    renderFilesPanel(execution.workspaceFiles || {});
+    updateFileBrowser(execution.workspaceFiles);
 
     if (execution.cancelled || execution.status === 'cancelled') {
       showStatus('Run stopped.', 'info');
@@ -436,6 +445,7 @@ async function handleRun() {
       files: {},
     });
     renderFilesPanel({});
+    resetFileTabsToSeeds();
     showStatus(`Error: ${message}`, 'error');
   } finally {
     activeInteractiveRun = null;
@@ -813,8 +823,127 @@ async function requestConsoleInput(message) {
 }
 
 // ---------------------------------------------------------------------------
-// Files panel
+// Files panel + editor file tabs
 // ---------------------------------------------------------------------------
+
+function activateFileTab(id) {
+  if (id === activeFileTabId) return;
+  const state = fileStateFor(id);
+  if (!state) return;
+  activeFileTabId = id;
+  editor.setState(state);
+  renderFileTabs();
+}
+
+function fileStateFor(id) {
+  if (id === MAIN_FILE_ID) return fileTabStates.get(MAIN_FILE_ID) || null;
+  const cached = fileTabStates.get(id);
+  if (cached) return cached;
+  const tab = fileTabs.find((entry) => entry.id === id);
+  if (!tab) return null;
+  const record = tab.record;
+  const text = typeof record?.text === 'string'
+    ? record.text
+    : `(binary file — ${record?.size || 0} bytes — cannot preview)`;
+  const state = EditorState.create({
+    doc: text,
+    extensions: [
+      basicSetup,
+      ...(id.endsWith('.py') ? [python()] : []),
+      EditorState.readOnly.of(true),
+      EditorView.editable.of(false),
+      EditorView.lineWrapping,
+    ],
+  });
+  fileTabStates.set(id, state);
+  return state;
+}
+
+function seedFileRecord(entry) {
+  let size = 0;
+  let text = null;
+  let decode_error = null;
+  if (typeof entry.content === 'string') {
+    text = entry.content;
+    size = new TextEncoder().encode(entry.content).length;
+  } else if (typeof entry.content_base64 === 'string') {
+    const bytes = Uint8Array.from(atob(entry.content_base64), (c) => c.charCodeAt(0));
+    size = bytes.length;
+    try {
+      text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    } catch {
+      text = null;
+      decode_error = 'not valid UTF-8';
+    }
+  }
+  return {
+    exists: true,
+    size,
+    text,
+    decode_error,
+    modified: false,
+    truncated: false,
+  };
+}
+
+function resetFileTabsToSeeds() {
+  const byId = new Map();
+  for (const entry of activityFiles()) {
+    if (typeof entry?.path !== 'string' || !entry.path || entry.path === MAIN_FILE_ID) continue;
+    byId.set(entry.path, { id: entry.path, record: seedFileRecord(entry) });
+  }
+  fileTabs = [...byId.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  refreshFileTabCaches();
+  renderFileTabs();
+}
+
+function applyRunSnapshot(snapshot) {
+  fileTabs = Object.entries(snapshot)
+    .filter(([path, record]) => record && record.exists && path !== MAIN_FILE_ID)
+    .map(([path, record]) => ({ id: path, record }))
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  refreshFileTabCaches();
+  renderFileTabs();
+}
+
+function refreshFileTabCaches() {
+  for (const id of [...fileTabStates.keys()]) {
+    if (id !== MAIN_FILE_ID) fileTabStates.delete(id);
+  }
+  if (activeFileTabId === MAIN_FILE_ID) return;
+  if (fileTabs.some((entry) => entry.id === activeFileTabId)) {
+    editor.setState(fileStateFor(activeFileTabId));
+  } else {
+    activeFileTabId = MAIN_FILE_ID;
+    editor.setState(fileTabStates.get(MAIN_FILE_ID));
+  }
+}
+
+function updateFileBrowser(workspaceFiles) {
+  if (workspaceFiles && typeof workspaceFiles === 'object' && Object.keys(workspaceFiles).length >= 1) {
+    applyRunSnapshot(workspaceFiles);
+  } else {
+    resetFileTabsToSeeds();
+  }
+}
+
+function renderFileTabs() {
+  const host = document.getElementById('file-tabs');
+  if (!host) return;
+  const tabs = [{ id: MAIN_FILE_ID, record: null }, ...fileTabs];
+  host.innerHTML = tabs.map(({ id, record }) => {
+    const active = id === activeFileTabId;
+    const title = escapeAttr(id) + (record?.truncated ? ' (preview truncated)' : '');
+    return `<button type="button" role="tab" class="file-tab${active ? ' active' : ''}" data-file-id="${escapeAttr(id)}"`
+      + ` aria-selected="${active ? 'true' : 'false'}" title="${title}">`
+      + `<span class="file-tab-label">${escapeHtml(id)}</span>`
+      + `${record?.modified ? '<span class="file-tab-dot" aria-hidden="true"></span>' : ''}`
+      + '</button>';
+  }).join('');
+  host.querySelectorAll('.file-tab').forEach((button) => {
+    button.addEventListener('click', () => activateFileTab(button.dataset.fileId));
+  });
+}
 
 function renderFilesPanel(files) {
   const panel = document.getElementById('files-panel');
@@ -832,6 +961,7 @@ function renderFilesPanel(files) {
       <button type="button" class="file-item-header" data-file-path="${escapeAttr(path)}">
         <span>${escapeHtml(path)}</span>
         ${record.text === null || record.text === undefined ? '<span class="file-item-binary">binary</span>' : ''}
+        ${record.modified ? '<span class="file-item-modified">changed</span>' : ''}
         <span class="file-item-size">${formatBytes(record.size || 0)}</span>
       </button>
       <div class="file-item-body hidden" data-file-body></div>
@@ -853,7 +983,8 @@ function toggleFileEntry(button) {
 
   const record = lastFiles[button.dataset.filePath] || {};
   if (typeof record.text === 'string') {
-    body.innerHTML = `<pre>${escapeHtml(record.text)}</pre>`;
+    body.innerHTML = `<pre>${escapeHtml(record.text)}</pre>`
+      + (record.truncated ? '<p class="file-item-truncated">Preview truncated at 100,000 characters.</p>' : '');
   } else {
     const label = record.decode_error ? 'Could not be decoded as UTF-8 — binary' : 'binary';
     body.innerHTML = `<pre>${escapeHtml(label)} (${record.size || 0} bytes)</pre>`;
@@ -990,6 +1121,7 @@ function handleReset() {
   setEditorValue(config.python_setup?.starter_code ?? '');
   discardSavedCode();
   renderFilesPanel({});
+  resetFileTabsToSeeds();
   setOutputPlaceholder();
   closeResultsModal();
   showStatus('Editor reset to starter code.', 'info');

@@ -11,10 +11,16 @@ Public API
     queue, stdio capture, and post-run captures. Result JSON:
 
     ``{status, attempt, stdout, prompts, promptDiagnostics, variables,
-    functions, functionCalls, files, scopedFunction, error, syntaxError, seed}``
+    functions, functionCalls, files, workspaceFiles, scopedFunction, error,
+    syntaxError, seed}``
 
     where ``status ∈ {done, need-input, syntax_error, forbidden_import,
     loop_budget, timeout, output_limit, error}``.
+
+    Run-mode results snapshot every regular file in the workdir after
+    execution into ``workspaceFiles`` (records like ``files``, plus
+    ``truncated``; capped at ``MAX_WORKSPACE_FILES``); check mode and
+    pre-execution failures yield ``{}``.
 
 ``analyze(spec_json) -> str``
     Parse once and evaluate ``{key, condition}`` entries via astmatch;
@@ -81,6 +87,7 @@ SOFT_WALL_MS_RUN = 15_000
 
 MAX_SAFE_INT = 2**53 - 1
 STRING_CAP = 100_000
+MAX_WORKSPACE_FILES = 100
 SEQUENCE_CAP = 1000
 REPR_CAP = 500
 
@@ -291,6 +298,7 @@ def _execute(source, tree, mode, prompt_inputs, capture, limits, attempt, seed):
 
         # Captures run while the working directory is still the seeded workdir.
         captures = _capture(capture, globals_dict, state, status)
+        workspace_files = _snapshot_workspace() if mode == "run" and status != "need-input" else {}
     finally:
         sys.stdout = orig_out
         sys.stderr = orig_err
@@ -314,6 +322,7 @@ def _execute(source, tree, mode, prompt_inputs, capture, limits, attempt, seed):
         "functions": captures["functions"],
         "functionCalls": captures["functionCalls"],
         "files": captures["files"],
+        "workspaceFiles": workspace_files,
         "scopedFunction": captures["scopedFunction"],
         "error": error,
         "syntaxError": syntax_error,
@@ -431,6 +440,52 @@ def _snapshot_seeded_files():
             except OSError:
                 continue
             _SEEDED_SNAPSHOT[path] = (stat.st_size, stat.st_mtime_ns)
+
+
+def _snapshot_workspace():
+    """Snapshot every regular file in the workdir (run-mode results)."""
+    cwd = os.getcwd()
+    paths = []
+    for root, _dirs, names in os.walk(cwd):
+        for name in names:
+            full = os.path.join(root, name)
+            if not os.path.isfile(full):
+                continue
+            paths.append(os.path.relpath(full, cwd).replace(os.sep, "/"))
+    paths.sort()
+    files = {}
+    for key in paths[:MAX_WORKSPACE_FILES]:
+        full = os.path.join(cwd, key.replace("/", os.sep))
+        record = {
+            "exists": True, "size": 0, "text": None,
+            "decode_error": None, "modified": False, "truncated": False,
+        }
+        try:
+            stat = os.stat(full)
+        except OSError as exc:
+            record["decode_error"] = f"{type(exc).__name__}: {exc}"
+            files[key] = record
+            continue
+        record["size"] = stat.st_size
+        try:
+            with open(full, "r", encoding="utf-8") as handle:
+                text = handle.read(STRING_CAP + 1)
+        except UnicodeDecodeError as exc:
+            record["decode_error"] = f"{type(exc).__name__}: {exc}"
+            files[key] = record
+            continue
+        except OSError as exc:
+            record["decode_error"] = f"{type(exc).__name__}: {exc}"
+            files[key] = record
+            continue
+        if len(text) > STRING_CAP:
+            text = text[:STRING_CAP]
+            record["truncated"] = True
+        record["text"] = text
+        seeded = _SEEDED_SNAPSHOT.get(os.path.abspath(full))
+        record["modified"] = seeded is None or seeded != (stat.st_size, stat.st_mtime_ns)
+        files[key] = record
+    return files
 
 
 # ---------------------------------------------------------------------------
@@ -887,6 +942,7 @@ def _empty_result(*, status, attempt, seed, prompt_inputs, error=None, syntax_er
         "functions": {},
         "functionCalls": [],
         "files": {},
+        "workspaceFiles": {},
         "scopedFunction": None,
         "error": error,
         "syntaxError": syntax_error,

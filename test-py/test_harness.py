@@ -245,6 +245,88 @@ class FileTests(unittest.TestCase):
         self.assertIn("..", result["error"]["message"])
 
 
+class WorkspaceSnapshotTests(unittest.TestCase):
+    def test_run_mode_snapshot_lists_seeded_and_written_files(self):
+        result = run_source(
+            'open("created.txt", "w").write("new")',
+            files=[{"path": "seed.txt", "content": "short"}],
+            mode="run",
+        )
+        self.assertEqual(result["status"], "done")
+        workspace = result["workspaceFiles"]
+        self.assertEqual(set(workspace), {"seed.txt", "created.txt"})
+        created = workspace["created.txt"]
+        self.assertEqual(created["text"], "new")
+        self.assertTrue(created["modified"])
+        self.assertEqual(created["size"], 3)
+        seed = workspace["seed.txt"]
+        self.assertEqual(seed["text"], "short")
+        self.assertFalse(seed["modified"])
+        self.assertEqual(seed["size"], 5)
+        self.assertFalse(seed["truncated"])
+
+    def test_check_mode_snapshot_is_empty(self):
+        result = run_source(
+            'open("created.txt", "w").write("new")',
+            files=[{"path": "seed.txt", "content": "short"}],
+            capture={"read_paths": ["seed.txt"]},
+        )
+        self.assertEqual(result["status"], "done")
+        self.assertEqual(result["workspaceFiles"], {})
+        self.assertEqual(result["files"]["seed.txt"]["text"], "short")
+
+    def test_need_input_attempt_has_no_snapshot(self):
+        result = run_source("input()", mode="run")
+        self.assertEqual(result["status"], "need-input")
+        self.assertEqual(result["workspaceFiles"], {})
+
+    def test_nested_paths_use_forward_slashes(self):
+        result = run_source(
+            'import os\nos.makedirs("sub")\nopen("sub/deep.txt", "w").write("x")',
+            mode="run",
+        )
+        self.assertEqual(result["status"], "done")
+        record = result["workspaceFiles"]["sub/deep.txt"]
+        self.assertEqual(record["text"], "x")
+
+    def test_binary_snapshot_reports_decode_error(self):
+        encoded = base64.b64encode(b"\xff\xfe\x00binary").decode("ascii")
+        result = run_source(
+            "pass",
+            files=[{"path": "blob.bin", "content_base64": encoded}],
+            mode="run",
+        )
+        record = result["workspaceFiles"]["blob.bin"]
+        self.assertTrue(record["exists"])
+        self.assertIsNone(record["text"])
+        self.assertTrue(record["decode_error"])
+        self.assertEqual(record["size"], 9)
+
+    def test_oversize_text_is_truncated(self):
+        result = run_source(
+            'open("big.txt", "w").write("x" * 100500)',
+            mode="run",
+        )
+        record = result["workspaceFiles"]["big.txt"]
+        self.assertEqual(len(record["text"]), harness.STRING_CAP)
+        self.assertTrue(record["truncated"])
+        self.assertEqual(record["size"], 100500)
+
+    def test_deleted_seed_is_absent_from_snapshot(self):
+        result = run_source(
+            'import os\nos.remove("gone.txt")',
+            files=[{"path": "gone.txt", "content": "bye"}],
+            mode="run",
+        )
+        self.assertEqual(result["status"], "done")
+        self.assertNotIn("gone.txt", result["workspaceFiles"])
+
+    def test_syntax_error_result_carries_empty_snapshot(self):
+        result = run_source("def foo(:", mode="run")
+        self.assertEqual(result["status"], "syntax_error")
+        self.assertEqual(result["workspaceFiles"], {})
+
+
 class TaggedValueTests(unittest.TestCase):
     def test_tagged_types(self):
         source = (

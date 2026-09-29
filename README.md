@@ -40,7 +40,7 @@ suite, network for the first Pyodide fetch (cached in `vendor/pyodide/`).
 | `npm run dev` | Watch + serve the builder on port 3000 |
 | `npm test` | Node test suite (validator, normalizer, test-config, hint evaluator, codec, SCORM wrapper, inline markdown) |
 | `npm run test:python` | Python unittest suite for the AST matcher and execution harness (`test-py/`) |
-| `npm run test:browser` | Full build + 21 Playwright end-to-end scenarios (8 files) driving the real Pyodide runtime |
+| `npm run test:browser` | Full build + 25 Playwright end-to-end scenarios (9 files) driving the real Pyodide runtime |
 
 ## Workflow
 
@@ -220,6 +220,18 @@ button before export.
   `user-select: none` gutter. Caveat: wall-clock-driven
   code (`time.time()`, `datetime.now()`) can diverge between attempts — avoid
   time-dependent logic in interactive activities.
+- **File browser (editor tabs + Files panel)** — a tab strip above the code editor shows
+  `main.py` (the editable student program) plus one read-only tab per workspace file:
+  seeded config files are browsable from load, and each completed Run replaces them with
+  the harness's `workspaceFiles` snapshot (an empty/absent snapshot — cancelled or timed-out
+  runs, worker death — falls back to the configured seeds, matching what the next run
+  re-seeds). The modal Results **Files** panel lists the same records with `changed` badges
+  for modified files and a truncation note for oversized previews. Files stay ephemeral:
+  `suspend_data` remains `{code}` only. Run-mode harness results carry `workspaceFiles`
+  keyed by forward-slash relative path with records
+  `{exists, size, text, decode_error, modified, truncated}` — `text` capped at
+  `STRING_CAP` (100 000 chars, `truncated: true` past it), at most `MAX_WORKSPACE_FILES`
+  (100) files, regular files only; check mode and pre-execution failures yield `{}`.
 - **Watchdogs (layered interruption)** — Python: `sys.settrace` event budget
   (`max_trace_events`) + soft wall clock (`soft_wall_ms`, 3 s check / 15 s run).
   JS: a 5 s hard deadline in check mode (catches C-level hangs) and a 20 s silence

@@ -786,6 +786,40 @@ body.modal-open {
   overflow-y: auto;
 }
 
+/* Editor file tabs */
+.file-tabs {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  overflow-x: auto;
+  padding: 4px 6px 0;
+  background: #f1f5f9;
+  border-bottom: 1px solid #ddd;
+}
+
+.file-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+  padding: 5px 12px;
+  border: 1px solid #ddd;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.file-tab-label { overflow: hidden; text-overflow: ellipsis; }
+.file-tab.active { background: #fff; color: #1a1a1a; }
+.file-tab-dot { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; }
+.file-item-modified { color: #b45309; }
+.file-item-truncated { margin: 6px 0 0; color: #64748b; font-size: 12px; }
+
 /* Input bar — docked below the run transcript (rendered by the console shell)
    so a pending prompt never covers the program's output. */
 .input-dialog {

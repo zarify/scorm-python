@@ -76,6 +76,7 @@ function buildPreviewHtml(config) {
       </aside>
 
       <main id="workspace-area">
+        <div id="file-tabs" class="file-tabs" role="tablist" aria-label="Program files"></div>
         <div id="editor"></div>
         <div id="controls">
           <button id="btn-run" class="btn btn-primary">▶ Run</button>
