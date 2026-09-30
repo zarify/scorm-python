@@ -727,6 +727,23 @@ test('an ast_pattern condition keeps its bounds in a publishable shape', () => {
   assert.equal(missing.testOmissions, 1);
 });
 
+test('strict survives draft and publish normalization only as true', () => {
+  const strict = { type: 'ast_pattern', pattern: 'if _:\n    ...', strict: true };
+  assert.deepEqual(draftCondition(strict), {
+    type: 'ast_pattern',
+    pattern: 'if _:\n    ...',
+    min_count: 1,
+    strict: true,
+  });
+  assert.equal(publishCondition(strict).conditions.strict, true);
+
+  for (const notStrict of [false, 1, 'yes', null, undefined]) {
+    assert.equal('strict' in draftCondition({ ...strict, strict: notStrict }), false);
+    const { conditions } = publishCondition({ ...strict, strict: notStrict });
+    assert.equal('strict' in conditions, false);
+  }
+});
+
 test('numeric condition bounds are clamped to their documented ranges', () => {
   const condition = (raw) => draftCondition({ type: 'ast_pattern', pattern: 'x', ...raw });
 

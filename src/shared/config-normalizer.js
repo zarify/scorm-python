@@ -401,6 +401,7 @@ function normalizeDraftCondition(condition) {
         pattern: asStringOr(condition.pattern, ''),
         min_count: asPositiveInteger(condition.min_count, 1),
         ...normalizeMaxCount(condition),
+        ...(condition.strict === true ? { strict: true } : {}),
       };
     case 'source_regex':
       return {
@@ -445,6 +446,7 @@ function normalizePublishCondition(condition) {
           ? { min_count: asPositiveInteger(condition.min_count, 1) }
           : {}),
         ...maxCount,
+        ...(condition.strict === true ? { strict: true } : {}),
       };
     }
     case 'source_regex': {

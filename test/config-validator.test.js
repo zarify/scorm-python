@@ -722,6 +722,34 @@ test('ast_pattern needs a pattern and consistent count bounds', () => {
   );
 });
 
+test('strict clause matching is an ast_pattern-only boolean', () => {
+  assertValid(validateTestCaseConfig(
+    structureTest({ type: 'ast_pattern', pattern: 'if _:\n    ...', strict: true }),
+  ));
+  assertOneErrorAt(
+    validateTestCaseConfig(structureTest({ type: 'ast_pattern', pattern: 'if _:\n    ...', strict: 'yes' })),
+    `${TEST_PATH}.conditions.strict`,
+    /Must be a boolean/,
+  );
+
+  // The flag is per ast_pattern leaf: other condition types reject it as an
+  // unknown property.
+  assertOneErrorAt(
+    validateTestCaseConfig(structureTest({ type: 'source_regex', pattern: 'x', strict: true })),
+    `${TEST_PATH}.conditions.strict`,
+    /Unknown property/,
+  );
+  assertOneErrorAt(
+    validateTestCaseConfig(structureTest({
+      type: 'all',
+      conditions: [{ type: 'source_empty' }],
+      strict: true,
+    })),
+    `${TEST_PATH}.conditions.strict`,
+    /Unknown property/,
+  );
+});
+
 test('source_regex flags accept only i, m and s, and case sensitivity is a boolean', () => {
   assertOneErrorAt(
     validateTestCaseConfig(structureTest({ type: 'source_regex' })),

@@ -137,6 +137,35 @@ async function setPattern(page, text) {
   }, text);
 }
 
+test('the strict clause-matching checkbox round-trips into the config', async (t) => {
+  if (skipReason) return t.skip(skipReason);
+  const { page, errors, close } = await builderPage();
+  t.after(close);
+
+  await importConfigIntoBuilder(page, join(EXAMPLES, 'hello-world.json'));
+  await openTab(page, 'tests');
+  await page.click('.test-list-item[data-index="1"]'); // the code_structure test
+  await page.waitForSelector('#test-condition-builder .cond-strict');
+
+  const conditionsOf = () => page.evaluate(
+    () => window.ActivityBuilder.getConfig().evaluation.test_cases.find(
+      (testCase) => testCase.type === 'code_structure',
+    ).conditions,
+  );
+
+  assert.equal((await conditionsOf()).strict, undefined, 'the flag starts absent (variant mode)');
+
+  await page.check('#test-condition-builder .cond-strict');
+  assert.equal((await conditionsOf()).strict, true, 'checking the box wrote strict: true');
+
+  await page.uncheck('#test-condition-builder .cond-strict');
+  assert.equal((await conditionsOf()).strict, false, 'unchecking wrote strict: false');
+
+  await page.check('#test-condition-builder .cond-strict');
+  assert.equal((await conditionsOf()).strict, true, 're-checking restores strict: true');
+  assert.deepEqual(errors, []);
+});
+
 async function exportZip(page) {
   const directory = await mkdtemp(join(tmpdir(), 'scorm-export-'));
   const downloadPromise = page.waitForEvent('download', { timeout: 120_000 });

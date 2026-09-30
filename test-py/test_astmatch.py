@@ -16,8 +16,8 @@ sys.path.insert(
 import astmatch  # noqa: E402
 
 
-def count(student_source, pattern):
-    return astmatch.count_matches(ast.parse(student_source), pattern)
+def count(student_source, pattern, strict=False):
+    return astmatch.count_matches(ast.parse(student_source), pattern, strict)
 
 
 class StatementSequenceModeTests(unittest.TestCase):
@@ -156,6 +156,53 @@ class ValidationTests(unittest.TestCase):
         astmatch.validate("print(...)")
 
 
+class ClauseVariantTests(unittest.TestCase):
+    """Variant (default) vs strict counts for every clause-list semantic.
+
+    The strict column was pinned against the pre-change matcher and must
+    stay bit-for-bit identical; the variant column is the new default.
+    """
+
+    MATRIX = [
+        # (pattern, student source, variant count, strict count)
+        ("if _:\n    _", "if x:\n    a\nelse:\n    b", 1, 0),
+        ("if _:\n    _", "if x:\n    a\nelif y:\n    b\nelse:\n    c", 2, 0),
+        ("for _ in _:\n    _", "for i in r:\n    a\nelse:\n    b", 1, 0),
+        ("try:\n    _\nexcept Exception:\n    _",
+         "try:\n    a\nexcept Exception:\n    b\nfinally:\n    c", 1, 0),
+        ("try:\n    _\nfinally:\n    _",
+         "try:\n    a\nexcept Exception:\n    b\nfinally:\n    c", 1, 0),
+        ("try:\n    _\nexcept Exception:\n    _",
+         "try:\n    a\nexcept Exception:\n    b\nexcept ValueError:\n    c", 1, 0),
+        ("try:\n    _\nexcept Exception:\n    _\nexcept ValueError:\n    _",
+         "try:\n    a\nexcept ValueError:\n    b\nexcept Exception:\n    c", 0, 0),
+        ("match _:\n    case _:\n        _",
+         "match x:\n    case 0:\n        a\n    case _:\n        b", 1, 0),
+        ("if x:\n    _\nelse:\n    print(_)",
+         "if x:\n    a\nelif y:\n    b\nelse:\n    print(c)", 1, 0),
+        ("if x:\n    _\nelse:\n    print(_)",
+         "if x:\n    a\nelse:\n        if y:\n            b\n        else:\n            print(c)", 1, 0),
+        ("try:\n    _\nexcept ValueError:\n    _",
+         "try:\n    a\nexcept ValueError as e:\n    b", 1, 0),
+        ("try:\n    _\nexcept ValueError as e:\n    _",
+         "try:\n    a\nexcept ValueError as e:\n    b", 1, 1),
+        ("try:\n    _\nexcept ValueError:\n    _",
+         "try:\n    a\nexcept:\n    b", 0, 0),
+        ("try:\n    _\nexcept:\n    _",
+         "try:\n    a\nexcept:\n    b\nelse:\n    c\nfinally:\n    d", 1, 0),
+        ("match _:\n    case _:\n        _", "match x:\n    case y if g:\n        b", 1, 0),
+        ("with _:\n    _", "with a, b:\n    c", 0, 0),
+        ("def _(...):\n    ...", "@dec\ndef f():\n    pass", 0, 0),
+        ("if _:\n    _", "if x:\n    a\nelif y:\n    b", 2, 1),
+    ]
+
+    def test_variant_and_strict_counts(self):
+        for index, (pattern, student, variant, strict) in enumerate(self.MATRIX, 1):
+            with self.subTest(row=index, pattern=pattern, student=student):
+                self.assertEqual(count(student, pattern), variant)
+                self.assertEqual(count(student, pattern, strict=True), strict)
+
+
 def astmatch_validate(pattern):
     return astmatch.validate(pattern)
 
@@ -193,6 +240,26 @@ class EvaluateConditionTests(unittest.TestCase):
         result = self.evaluate({"type": "ast_pattern", "pattern": "value = ..."})
         self.assertFalse(result["passed"])
         self.assertIn("invalid ast_pattern", result["detail"])
+
+    def test_variant_default_passes_an_if_else(self):
+        source = "if x:\n    a\nelse:\n    b"
+        result = astmatch.evaluate_condition(
+            ast.parse(source),
+            {"type": "ast_pattern", "pattern": "if _:\n    _"},
+            source,
+        )
+        self.assertTrue(result["passed"])
+        self.assertEqual(result["detail"], "ast_pattern matched 1/required 1")
+
+    def test_strict_condition_rejects_an_if_else(self):
+        source = "if x:\n    a\nelse:\n    b"
+        result = astmatch.evaluate_condition(
+            ast.parse(source),
+            {"type": "ast_pattern", "pattern": "if _:\n    _", "strict": True},
+            source,
+        )
+        self.assertFalse(result["passed"])
+        self.assertEqual(result["detail"], "ast_pattern matched 0/required 1")
 
     def test_source_regex(self):
         result = self.evaluate({"type": "source_regex", "pattern": "PRINT", "case_sensitive": False})

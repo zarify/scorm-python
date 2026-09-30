@@ -155,6 +155,11 @@
               "type": "integer",
               "minimum": 1,
               "description": "Optional upper bound; must be greater than or equal to min_count"
+            },
+            "strict": {
+              "type": "boolean",
+              "default": false,
+              "description": "When true the pattern must match exactly the clauses it writes; when false (default) it matches construct variants that include additional clauses"
             }
           },
           "required": ["type", "pattern"]

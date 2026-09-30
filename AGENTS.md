@@ -173,8 +173,8 @@ node --test test/<file>.test.js  # one suite
 ## Testing & QA
 
 - Three suites plus browser scenarios; **all four must be green** before handing work back:
-  `npm test` (230), `npm run test:python` (84), `npm run build && npm run export` (both modes),
-  `npm run test:browser` (25 across 9 files).
+  `npm test` (232), `npm run test:python` (87), `npm run build && npm run export` (both modes),
+  `npm run test:browser` (26 across 9 files).
 - Browser tests **skip** (not fail) when no Chrome/Chromium launches; `PLAYWRIGHT_CHANNEL`
   overrides the channel. They drive the real Pyodide runtime against a mock LMS
   (`test/browser/helpers/mock-lms.js`, localStorage-backed `window.API`).

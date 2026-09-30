@@ -163,7 +163,9 @@ function renderAstPatternFields(condition, onChange, validatePattern) {
   hint.className = 'condition-note';
   hint.innerHTML = 'Python source with wildcards: <code>_</code> matches any expression, '
     + '<code>_name</code> binds one name consistently, <code>…</code> matches any statements '
-    + 'or call arguments.';
+    + 'or call arguments. By default a pattern matches construct variants '
+    + '(an <code>if</code> also matches <code>if-else</code>); tick “Strict clause matching” '
+    + 'to require exactly the clauses written.';
   fragment.appendChild(hint);
 
   const host = document.createElement('div');
@@ -255,6 +257,19 @@ function renderAstPatternFields(condition, onChange, validatePattern) {
   }
 
   fragment.appendChild(counts);
+
+  const strictLabel = document.createElement('label');
+  strictLabel.className = 'checkbox-label';
+  const strictBox = document.createElement('input');
+  strictBox.type = 'checkbox';
+  strictBox.className = 'cond-strict';
+  strictBox.checked = condition.strict === true;
+  strictBox.addEventListener('change', () => {
+    condition.strict = strictBox.checked;
+    onChange(condition);
+  });
+  strictLabel.append(strictBox, ' Strict clause matching');
+  fragment.appendChild(strictLabel);
   return fragment;
 }
 

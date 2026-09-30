@@ -112,7 +112,7 @@ hint's conditions into a single analyzer call.
 
 | Type | Fields | Meaning |
 | --- | --- | --- |
-| `ast_pattern` | `pattern`, `min_count` (≥1, default 1), `max_count` (optional, ≥ min) | Count AST matches of a Python-source pattern |
+| `ast_pattern` | `pattern`, `min_count` (≥1, default 1), `max_count` (optional, ≥ min), `strict` (default false — exact clause sets when true; construct variants when false) | Count AST matches of a Python-source pattern |
 | `source_regex` | `pattern`, `case_sensitive` (default true), `regex_flags` (chars from `ims`) | Python `re.search` over the raw source — `re` dialect, so `\1` backreferences work |
 | `source_empty` | — | Passes when the editor is empty/whitespace |
 | `all` / `any` / `none` | `conditions` (≥1 child) | AND / OR / NOT over child conditions |
@@ -182,10 +182,33 @@ expression node** in the student's tree; anything else matches **statement seque
 at every offset of every statement list (module body and all `body`/`orelse`/`finalbody`
 lists), non-overlapping leftmost-first, summed.
 
-**Note**: `if` and `if-else` are two different things from the AST parser's point of view.
-You can't check for just an `if` and have it also match an `if-else`. Additionally,
-the AST sees `if-elif` as `if-else: if`, so checking selection blocks can be a bit
-tricky.
+**Clause variants** (the default — `strict` absent or `false`): a pattern matches any
+variant of the construct that includes the clauses it writes.
+
+- Clause lists the pattern omits are unconstrained: `if _:\n    ...` matches `if`,
+  `if-else`, and `if-elif-…`; `for _ in _:\n    ...` matches `for-else`; a `try`
+  pattern missing `except`/`else`/`finally` matches variants that add them —
+  `try:\n    _\nfinally:\n    _` matches a `try/except/finally`.
+- Written arms must appear **in order** among the student's, which may have more
+  (backtracking subsequence): written `except` handlers and `match` cases match in
+  order with extra student arms tolerated. Out-of-order arms do not match.
+- A written `if`-`else` body matches the **final `else`** of an `elif` chain — the
+  AST represents `elif` and `else: if` identically, and both are treated as chains.
+- Arm modifiers the pattern omits are unconstrained: an `except` without `as name`
+  accepts any or absent binding, a `case` without `if guard` accepts any or absent
+  guard. A written `as name` matches that literal name; a written guard must match
+  (use `if _` for any guard). The `except` **type** is always exact — bare
+  `except:` matches only bare, `except ValueError:` only `ValueError`.
+- Counting is per matching node: an `if-elif` chain holds two `If` nodes, so
+  `if _:\n    _` matches **twice** on `if x:\n    a\nelif y:\n    b`, and
+  `min_count`/`max_count` count arms, not chains.
+
+`strict: true` on the condition restores clause-exact matching (every omitted
+clause list must be empty on the student node — the behavior before this option
+existed) — set it per condition where a live activity must keep old grading.
+Unchanged in both modes: `body` suites (use `...` for "any statements"), with-items,
+decorators, parameter lists, annotations, class bases, all expression content, and
+cross-class matching (`Try` never matches `TryStar`, `For` never `AsyncFor`).
 
 Worked examples:
 

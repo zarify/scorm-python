@@ -47,11 +47,37 @@ Matching modes
    statement: the inner expression is matched against every expression node
    in the student tree; the count is the number of matching nodes.
 
+Clause variants (non-strict default)
+------------------------------------
+With ``strict`` falsy or absent (the default), clause lists the pattern
+leaves empty — ``orelse``, ``finalbody``, ``handlers``, ``cases`` — are
+**unconstrained**: ``if _`` matches ``if``/``if-else``/``if-elif-…``, and a
+``try`` pattern missing ``except``/``else``/``finally`` matches variants that
+add them. Where the pattern does write arms, extra student arms are tolerated
+**in order**: written ``except`` handlers and ``match`` cases must appear as
+an in-order subsequence of the student's arms (backtracking), and a written
+``If``-``else`` body matches the **final ``else`` of an ``elif`` chain
+(``elif`` and ``else: if`` are AST-identical; both are treated as chains).
+Optional arm modifiers omitted in the pattern are unconstrained: an
+``except`` clause without ``as name`` accepts any or absent binding, a
+``case`` arm without ``if guard`` accepts any or absent guard, and a ``case
+_`` arm accepts any or absent capture name; a written ``as name`` matches
+the literal name and a written guard must match (``if _`` for any guard).
+The ``except`` **type** expression (bare ``except:`` included) always
+matches exactly — it is the arm's identity. Counting is per matching node:
+an ``if-elif`` chain holds two ``If`` nodes, so a bare ``if`` pattern
+matches twice on one chain and ``min_count``/``max_count`` count arms, not
+chains. Unchanged in both modes: ``body`` suites (use ``...``), with-items,
+decorators, parameter lists, annotations, class bases, all expression
+content, and cross-class matching. ``strict: true`` restores clause-exact
+matching — every clause list the pattern leaves empty must be empty on the
+student node (the behavior of configs written before this option existed).
+
 Public API: :class:`PatternError`, ``validate(pattern_source) -> None``,
-``count_matches(student_ast, pattern_source) -> int``, and
+``count_matches(student_ast, pattern_source, strict=False) -> int``, and
 ``evaluate_condition(source_ast, condition, raw_source=None) -> {passed, detail}``
-handling ``ast_pattern`` (``min_count``/``max_count``), ``source_regex``,
-``source_empty``, and recursive ``all``/``any``/``none``.
+handling ``ast_pattern`` (``min_count``/``max_count``/``strict``),
+``source_regex``, ``source_empty``, and recursive ``all``/``any``/``none``.
 """
 
 import ast
@@ -76,6 +102,7 @@ _ANY_PARAMS_REWRITE_RE = re.compile(
 _SEQUENCE_FIELDS = ("body", "orelse", "finalbody")
 _REGEX_FLAG_CHARS = {"i": re.I, "m": re.M, "s": re.S}
 _DEFINITION_TYPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+_CLAUSE_LIST_FIELDS = ("orelse", "finalbody", "handlers", "cases")
 
 
 # ---------------------------------------------------------------------------
@@ -147,6 +174,19 @@ def _is_expression_pattern(tree):
     return isinstance(stmt, ast.Expr) and not _is_ellipsis_stmt(stmt)
 
 
+def _is_clause_list_field(pat, field):
+    """True for the clause lists eligible under variant (non-strict) matching."""
+    if field not in _CLAUSE_LIST_FIELDS:
+        return False
+    if field == "orelse":
+        return isinstance(
+            pat, (ast.If, ast.For, ast.While, ast.AsyncFor, ast.Try, ast.TryStar)
+        )
+    if field in ("finalbody", "handlers"):
+        return isinstance(pat, (ast.Try, ast.TryStar))
+    return isinstance(pat, ast.Match)  # field == "cases"
+
+
 # ---------------------------------------------------------------------------
 # Matching
 # ---------------------------------------------------------------------------
@@ -166,7 +206,7 @@ def _bind(pattern_name, target, env):
     return bound
 
 
-def _match_node(pat, stu, env):
+def _match_node(pat, stu, env, strict):
     """Match one pattern node against one student node. Returns env or None."""
     if not isinstance(pat, ast.AST):
         # Scalar fields (strings inside lists such as Global.names, keyword
@@ -207,18 +247,20 @@ def _match_node(pat, stu, env):
         return env if pat.value == stu.value else None
 
     if isinstance(pat, ast.Call):
-        return _match_call(pat, stu, env)
+        return _match_call(pat, stu, env, strict)
 
-    return _match_fields(pat, stu, env)
+    return _match_fields(pat, stu, env, strict)
 
 
-def _match_call(pat, stu, env):
-    stepped = _match_node(pat.func, stu.func, env)
+def _match_call(pat, stu, env, strict):
+    stepped = _match_node(pat.func, stu.func, env, strict)
     if stepped is None:
         return None
     pat_items = list(pat.args) + list(pat.keywords)
     stu_items = list(stu.args) + list(stu.keywords)
-    result = _match_sequence(pat_items, stu_items, _is_arg_marker, stepped, True)
+    result = _match_sequence(
+        pat_items, stu_items, _is_arg_marker, stepped, True, strict
+    )
     if result is None:
         return None
     return result[1]
@@ -240,7 +282,7 @@ def _is_any_params_pattern(node):
     )
 
 
-def _match_fields(pat, stu, env):
+def _match_fields(pat, stu, env, strict):
     for field in pat._fields:
         if field == "ctx":
             continue
@@ -274,18 +316,82 @@ def _match_fields(pat, stu, env):
                 return None
             continue
 
-        stepped = _match_field_value(field, pv, sv, env)
+        if not strict and _is_clause_list_field(pat, field):
+            stepped = _match_clause_field(pat, field, pv, sv, env, strict)
+            if stepped is None:
+                return None
+            env = stepped
+            continue
+
+        # Variant mode: omitted arm modifiers are unconstrained. A written
+        # `as name` / `if guard` falls through to the normal comparison.
+        if not strict and pv is None:
+            if field == "name" and isinstance(pat, ast.ExceptHandler):
+                continue
+            if field == "guard" and isinstance(pat, ast.match_case):
+                continue
+            if field == "name" and isinstance(pat, ast.MatchAs):
+                # `case _` parses to MatchAs() (no capture); a student
+                # `case y` carries name='y' — any or absent capture matches.
+                continue
+
+        stepped = _match_field_value(field, pv, sv, env, strict)
         if stepped is None:
             return None
         env = stepped
     return env
 
 
-def _match_field_value(field, pv, sv, env):
+def _match_clause_field(pat, field, pv, sv, env, strict):
+    """Variant-mode matching for one clause list. Returns env or None."""
+    if not pv:
+        # A clause list the pattern omits is unconstrained: any student
+        # tail (else / finally / extra handlers / extra cases) is accepted.
+        return env
+    if not isinstance(sv, list):
+        return None  # defensive; ast.parse cannot produce this
+    if field in ("handlers", "cases"):
+        # Written arms must appear in order among the student's arms;
+        # the student may have more (backtracking subsequence).
+        return _match_subsequence(pv, sv, env, strict)
+    result = _match_sequence(pv, sv, _is_ellipsis_stmt, env, True, strict)
+    if result is not None:
+        return result[1]
+    if field == "orelse" and isinstance(pat, ast.If):
+        # A written `else` matches the final else of an elif chain: the AST
+        # flattens `elif y: ... else: ...` into a nested If in orelse. Walk
+        # the chain (intermediate tests/bodies are unconstrained) and match
+        # the suite at the tail. `else: if` is AST-identical to `elif`.
+        tail = sv
+        while len(tail) == 1 and isinstance(tail[0], ast.If):
+            tail = tail[0].orelse
+        result = _match_sequence(pv, tail, _is_ellipsis_stmt, env, True, strict)
+        if result is not None:
+            return result[1]
+    return None
+
+
+def _match_subsequence(pat_items, stu_items, env, strict, pi=0, si=0):
+    """Match every pattern arm against student arms, in order, extras allowed."""
+    if pi == len(pat_items):
+        return env
+    if si == len(stu_items):
+        return None
+    stepped = _match_node(pat_items[pi], stu_items[si], env, strict)
+    if stepped is not None:
+        result = _match_subsequence(
+            pat_items, stu_items, stepped, strict, pi + 1, si + 1
+        )
+        if result is not None:
+            return result
+    return _match_subsequence(pat_items, stu_items, env, strict, pi, si + 1)
+
+
+def _match_field_value(field, pv, sv, env, strict):
     if isinstance(pv, ast.AST):
         if not isinstance(sv, ast.AST):
             return None
-        return _match_node(pv, sv, env)
+        return _match_node(pv, sv, env, strict)
 
     if isinstance(pv, list):
         if not isinstance(sv, list):
@@ -293,13 +399,13 @@ def _match_field_value(field, pv, sv, env):
         if field in _SEQUENCE_FIELDS:
             # Nested statement lists (function bodies, branches, …) are matched
             # entirely; offsets are the outer scan's concern.
-            result = _match_sequence(pv, sv, _is_ellipsis_stmt, env, True)
+            result = _match_sequence(pv, sv, _is_ellipsis_stmt, env, True, strict)
             return result[1] if result is not None else None
         if len(pv) != len(sv):
             return None
         stepped = env
         for pat_item, stu_item in zip(pv, sv):
-            stepped = _match_node(pat_item, stu_item, stepped)
+            stepped = _match_node(pat_item, stu_item, stepped, strict)
             if stepped is None:
                 return None
         return stepped
@@ -309,7 +415,9 @@ def _match_field_value(field, pv, sv, env):
     return None
 
 
-def _match_sequence(pat_items, stu_items, is_marker, env, must_consume, pi=0, si=0):
+def _match_sequence(
+    pat_items, stu_items, is_marker, env, must_consume, strict, pi=0, si=0
+):
     """Match pat_items[pi:] against stu_items[si:], markers reluctant.
 
     Returns (end_index, env) for the first (leftmost, shortest-marker-expansion)
@@ -324,7 +432,7 @@ def _match_sequence(pat_items, stu_items, is_marker, env, must_consume, pi=0, si
         taken = 0
         while si + taken <= len(stu_items):
             result = _match_sequence(
-                pat_items, stu_items, is_marker, env, must_consume,
+                pat_items, stu_items, is_marker, env, must_consume, strict,
                 pi + 1, si + taken,
             )
             if result is not None:
@@ -333,11 +441,12 @@ def _match_sequence(pat_items, stu_items, is_marker, env, must_consume, pi=0, si
         return None
     if si >= len(stu_items):
         return None
-    stepped = _match_node(pat_items[pi], stu_items[si], env)
+    stepped = _match_node(pat_items[pi], stu_items[si], env, strict)
     if stepped is None:
         return None
     return _match_sequence(
-        pat_items, stu_items, is_marker, stepped, must_consume, pi + 1, si + 1
+        pat_items, stu_items, is_marker, stepped, must_consume, strict,
+        pi + 1, si + 1,
     )
 
 
@@ -352,11 +461,11 @@ def _collect_statement_lists(tree):
     return lists
 
 
-def _count_in_list(pat_stmts, stu_stmts):
+def _count_in_list(pat_stmts, stu_stmts, strict):
     count = 0
     pos = 0
     while pos <= len(stu_stmts):
-        result = _match_sequence_at(pat_stmts, stu_stmts, pos)
+        result = _match_sequence_at(pat_stmts, stu_stmts, pos, strict)
         if result is None:
             pos += 1
             continue
@@ -369,11 +478,13 @@ def _count_in_list(pat_stmts, stu_stmts):
     return count
 
 
-def _match_sequence_at(pat_stmts, stu_stmts, pos):
-    return _match_sequence(pat_stmts, stu_stmts, _is_ellipsis_stmt, {}, False, 0, pos)
+def _match_sequence_at(pat_stmts, stu_stmts, pos, strict):
+    return _match_sequence(
+        pat_stmts, stu_stmts, _is_ellipsis_stmt, {}, False, strict, 0, pos
+    )
 
 
-def count_matches(student_ast, pattern_source):
+def count_matches(student_ast, pattern_source, strict=False):
     """Count pattern matches in a student AST. Validates first."""
     tree = _parse_pattern(pattern_source)
 
@@ -381,13 +492,13 @@ def count_matches(student_ast, pattern_source):
         target = tree.body[0].value
         count = 0
         for node in ast.walk(student_ast):
-            if _match_node(target, node, {}) is not None:
+            if _match_node(target, node, {}, strict) is not None:
                 count += 1
         return count
 
     total = 0
     for stmt_list in _collect_statement_lists(student_ast):
-        total += _count_in_list(tree.body, stmt_list)
+        total += _count_in_list(tree.body, stmt_list, strict)
     return total
 
 
@@ -434,8 +545,9 @@ def evaluate_condition(source_ast, condition, raw_source=None):
         pattern = condition.get("pattern")
         if not isinstance(pattern, str) or not pattern.strip():
             return {"passed": False, "detail": "ast_pattern has no pattern"}
+        strict = bool(condition.get("strict"))
         try:
-            count = count_matches(source_ast, pattern)
+            count = count_matches(source_ast, pattern, strict)
         except PatternError as exc:
             return {"passed": False, "detail": f"invalid ast_pattern: {exc}"}
         min_count = _as_int(condition.get("min_count"), 1)

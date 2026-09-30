@@ -108,7 +108,7 @@ const TEST_CASE_FIELDS_BY_TYPE = {
 };
 
 const CONDITION_FIELDS_BY_TYPE = {
-  ast_pattern: ['type', 'pattern', 'min_count', 'max_count'],
+  ast_pattern: ['type', 'pattern', 'min_count', 'max_count', 'strict'],
   source_regex: ['type', 'pattern', 'case_sensitive', 'regex_flags'],
   source_empty: ['type'],
   all: ['type', 'conditions'],
@@ -852,6 +852,9 @@ function validateCondition(condition, path, errors) {
           errors.push({ path: `${path}.max_count`, message: 'Must be greater than or equal to min_count' });
         }
       }
+    }
+    if (condition.strict !== undefined && typeof condition.strict !== 'boolean') {
+      errors.push({ path: `${path}.strict`, message: 'Must be a boolean' });
     }
   } else if (condition.type === 'source_regex') {
     validateRequired(condition, 'pattern', 'string', errors, path);
