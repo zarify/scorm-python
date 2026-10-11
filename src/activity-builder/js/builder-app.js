@@ -112,19 +112,12 @@ export function resetPythonEngine() {
 function init() {
   setupTabs();
   setupHeaderActions();
-  showFileModeBanner();
 
   initConfigTab();
   initCodeTab();
   initHintsTab();
   initTestsTab();
   initPreviewTab();
-}
-
-function showFileModeBanner() {
-  if (!fileMode) return;
-  const banner = document.getElementById('file-mode-banner');
-  if (banner) banner.classList.remove('hidden');
 }
 
 function setupTabs() {
