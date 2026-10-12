@@ -21,6 +21,32 @@ const CONDITION_TYPE_LABELS = {
   none: 'None of… (NOT)',
 };
 
+const collapsedConditions = new WeakSet();
+
+function nodeSummaryText(condition) {
+  if (['all', 'any', 'none'].includes(condition.type)) {
+    const count = (condition.conditions ?? []).length;
+    return `${count} sub-condition${count === 1 ? '' : 's'}`;
+  }
+
+  const snippet = [condition.pattern, condition.block_type, condition.upper_type]
+    .find((value) => value != null && String(value).trim());
+  if (snippet == null) return '';
+
+  const normalized = String(snippet).trim().replace(/\s+/g, ' ');
+  return normalized.length > 48 ? `${normalized.slice(0, 48)}…` : normalized;
+}
+
+function updateSummary(node, condition) {
+  const summary = node.querySelector('.condition-node-summary');
+  if (summary) summary.textContent = nodeSummaryText(condition);
+}
+
+function setConditionNodeExpanded(toggle, expanded) {
+  toggle.setAttribute('aria-expanded', String(expanded));
+  toggle.setAttribute('aria-label', expanded ? 'Collapse condition' : 'Expand condition');
+}
+
 /** A valid default condition object for the given type. */
 export function createDefaultCondition(type = 'ast_pattern') {
   switch (type) {
@@ -69,14 +95,61 @@ export function renderConditionEditor({ container, condition, onChange, validate
   });
 
   const wrapper = document.createElement('div');
-  wrapper.className = `condition-editor condition-depth-${Math.min(depth, 3)}`;
+  const isComposite = ['all', 'any', 'none'].includes(condition.type);
+  wrapper.className = `condition-node${isComposite ? ` condition-node--${condition.type}` : ''}`;
 
-  wrapper.appendChild(renderTypeRow(condition, onChange, onRemove, rerender));
-  wrapper.appendChild(renderTypeFields(condition, onChange, validatePattern, depth));
+  const header = document.createElement('div');
+  header.className = 'condition-node-header';
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'condition-node-toggle';
+  toggle.textContent = '▾';
+  toggle.addEventListener('click', () => {
+    const collapsed = !collapsedConditions.has(condition);
+    if (collapsed) collapsedConditions.add(condition);
+    else collapsedConditions.delete(condition);
+    wrapper.classList.toggle('is-collapsed', collapsed);
+    setConditionNodeExpanded(toggle, !collapsed);
+    if (!collapsed) {
+      wrapper.querySelectorAll('.cond-pattern').forEach((host) => host.condPatternView?.requestMeasure());
+    }
+  });
+
+  const title = document.createElement('span');
+  title.className = 'condition-node-title';
+  title.textContent = CONDITION_TYPE_LABELS[condition.type] ?? condition.type;
+
+  const summary = document.createElement('span');
+  summary.className = 'condition-node-summary';
+  summary.textContent = nodeSummaryText(condition);
+
+  header.append(toggle, title, summary);
+  if (onRemove) {
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'condition-remove';
+    removeBtn.title = 'Remove this condition';
+    removeBtn.textContent = '✕';
+    removeBtn.addEventListener('click', onRemove);
+    header.appendChild(removeBtn);
+  }
+
+  const body = document.createElement('div');
+  body.className = 'condition-node-body';
+  body.append(renderTypeRow(condition, onChange, rerender));
+  body.append(renderTypeFields(condition, onChange, validatePattern, depth, () => updateSummary(wrapper, condition)));
+  wrapper.append(header, body);
+
+  const hasEmbeddedEditor = [...body.querySelectorAll('.cond-pattern')]
+    .some((host) => host.closest('.condition-node') === wrapper);
+  const restoreCollapse = collapsedConditions.has(condition) && !hasEmbeddedEditor;
+  wrapper.classList.toggle('is-collapsed', restoreCollapse);
+  setConditionNodeExpanded(toggle, !restoreCollapse);
   container.appendChild(wrapper);
 }
 
-function renderTypeRow(condition, onChange, onRemove, rerender) {
+function renderTypeRow(condition, onChange, rerender) {
   const row = document.createElement('div');
   row.className = 'condition-type-row';
 
@@ -102,22 +175,12 @@ function renderTypeRow(condition, onChange, onRemove, rerender) {
       replacement.conditions = condition.conditions;
     }
     applyReplacement(condition, replacement);
+    collapsedConditions.delete(condition);
     onChange(condition);
     rerender();
   });
 
   row.append(label, select);
-
-  if (onRemove) {
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.className = 'condition-remove btn btn-small btn-secondary';
-    removeBtn.title = 'Remove this condition';
-    removeBtn.textContent = '✕';
-    removeBtn.addEventListener('click', onRemove);
-    row.appendChild(removeBtn);
-  }
-
   return row;
 }
 
@@ -128,7 +191,7 @@ function applyReplacement(target, replacement) {
   Object.assign(target, replacement);
 }
 
-function renderTypeFields(condition, onChange, validatePattern, depth) {
+function renderTypeFields(condition, onChange, validatePattern, depth, updateNodeSummary) {
   const fields = document.createElement('div');
   fields.className = 'condition-fields';
 
@@ -149,7 +212,7 @@ function renderTypeFields(condition, onChange, validatePattern, depth) {
     case 'all':
     case 'any':
     case 'none':
-      fields.appendChild(renderCompositeFields(condition, onChange, validatePattern, depth));
+      fields.appendChild(renderCompositeFields(condition, onChange, validatePattern, depth, updateNodeSummary));
       break;
     default:
   }
@@ -331,7 +394,7 @@ function renderRegexFields(condition, onChange) {
   return fragment;
 }
 
-function renderCompositeFields(condition, onChange, validatePattern, depth) {
+function renderCompositeFields(condition, onChange, validatePattern, depth, updateNodeSummary) {
   const fragment = document.createDocumentFragment();
   if (!Array.isArray(condition.conditions)) condition.conditions = [];
 
@@ -376,12 +439,13 @@ function renderCompositeFields(condition, onChange, validatePattern, depth) {
         renderChildren();
       },
     });
+    updateNodeSummary();
   };
   renderChildren();
 
   const addChild = document.createElement('button');
   addChild.type = 'button';
-  addChild.className = 'btn btn-small btn-secondary';
+  addChild.className = 'btn btn-small btn-secondary add-sub-condition';
   addChild.textContent = '+ Add sub-condition';
   addChild.addEventListener('click', () => {
     condition.conditions.push(createDefaultCondition('ast_pattern'));

@@ -44,14 +44,14 @@ async function builderPage() {
   return handle;
 }
 
-test('all six tabs render and activate', async (t) => {
+test('all tabs render and activate', async (t) => {
   if (skipReason) return t.skip(skipReason);
   const { page, errors, close } = await builderPage();
   t.after(close);
 
   const tabs = await page.evaluate(() => [...document.querySelectorAll('.tab-btn')]
     .map((button) => button.dataset.tab));
-  assert.deepEqual(tabs, ['config', 'code', 'hints', 'tests', 'preview', 'export']);
+  assert.deepEqual(tabs, ['config', 'code', 'hints', 'tests', 'preview']);
 
   for (const tab of tabs) {
     await openTab(page, tab);
@@ -68,6 +68,113 @@ test('all six tabs render and activate', async (t) => {
     'the starter-code editor mounted',
   );
   assert.deepEqual(errors, []);
+});
+
+test('condition nodes are containers with collapsible boolean groups', async (t) => {
+  if (skipReason) return t.skip(skipReason);
+  const { page, errors, close } = await builderPage();
+  t.after(close);
+
+  await importConfigIntoBuilder(page, join(EXAMPLES, 'hello-world.json'));
+  await openTab(page, 'hints');
+  await page.click('.hint-list-item[data-index="0"]');
+  await page.waitForSelector('#hint-condition-host > .condition-node');
+
+  const rootSelector = '#hint-condition-host > .condition-node';
+  const rootSelect = `${rootSelector} .cond-type-select`;
+  const rootAdd = `${rootSelector} > .condition-node-body > .condition-fields > .add-sub-condition`;
+  const childrenSelector = `${rootSelector} > .condition-node-body > .condition-fields > .condition-children > .condition-card > [data-condition-host] > .condition-node`;
+  await page.selectOption(rootSelect, 'all');
+  const initialCount = await page.evaluate(() => window.ActivityBuilder.getConfig().hints[0].trigger.conditions.conditions.length);
+  await page.click(rootAdd);
+  assert.equal(
+    await page.evaluate(() => window.ActivityBuilder.getConfig().hints[0].trigger.conditions.conditions.length),
+    initialCount + 1,
+  );
+  assert.equal(await page.locator(childrenSelector).count(), initialCount + 1, 'each child renders as a condition node');
+  assert.equal(
+    await page.locator(rootAdd).evaluate((button) => button.closest('.condition-node-body') !== null),
+    true,
+    'the add button stays inside its owning group body',
+  );
+
+  await page.locator(childrenSelector).first().locator('.cond-type-select').selectOption('any');
+  const anyGroup = page.locator('#hint-condition-host .condition-node--any').first();
+  await anyGroup.locator('.add-sub-condition').click();
+  assert.ok(
+    await page.locator('#hint-condition-host .condition-node--all .condition-node--any .condition-node').count(),
+    'nested boolean groups contain child condition nodes',
+  );
+
+  const headerColors = await page.evaluate(() => {
+    const host = document.getElementById('hint-condition-host');
+    const root = host.querySelector(':scope > .condition-node');
+    const any = host.querySelector('.condition-node--any');
+    const leaf = any.querySelector(':scope > .condition-node-body > .condition-fields > .condition-children > .condition-card > [data-condition-host] > .condition-node');
+    return {
+      root: getComputedStyle(root.querySelector(':scope > .condition-node-header')).backgroundColor,
+      any: getComputedStyle(any.querySelector(':scope > .condition-node-header')).backgroundColor,
+      leaf: getComputedStyle(leaf.querySelector(':scope > .condition-node-header')).backgroundColor,
+      leafTitle: getComputedStyle(leaf.querySelector(':scope > .condition-node-header > .condition-node-title')).color,
+    };
+  });
+  assert.deepEqual(headerColors, {
+    root: 'rgb(232, 240, 251)',
+    any: 'rgb(233, 245, 236)',
+    leaf: 'rgb(246, 248, 250)',
+    leafTitle: 'rgb(51, 51, 51)',
+  });
+  assert.equal(await page.locator(`${rootSelector}.condition-node--all`).count(), 1, 'the root exposes the AND tint hook');
+  assert.equal(
+    await page.locator('#hint-condition-host .condition-node-title').evaluateAll((titles) => titles.every((title) => title.textContent.trim())),
+    true,
+    'every condition node has a static heading',
+  );
+
+  const root = page.locator(rootSelector);
+  const rootToggle = page.locator(`${rootSelector} > .condition-node-header > .condition-node-toggle`);
+  const rootBody = page.locator(`${rootSelector} > .condition-node-body`);
+  const rootSummary = page.locator(`${rootSelector} > .condition-node-header > .condition-node-summary`);
+  await rootToggle.click();
+  assert.equal(await root.evaluate((node) => node.classList.contains('is-collapsed')), true);
+  assert.equal(await rootBody.isHidden(), true);
+  assert.equal(await rootToggle.getAttribute('aria-expanded'), 'false');
+  assert.match(await rootSummary.textContent(), /sub-condition/);
+  assert.equal(await rootSummary.isVisible(), true);
+  await rootToggle.click();
+  await page.locator('#hint-condition-host .condition-node--any > .condition-node-header > .condition-node-toggle').click();
+  await page.locator(rootAdd).click();
+  assert.equal(
+    await page.locator('#hint-condition-host .condition-node--any').first().evaluate((node) => node.classList.contains('is-collapsed')),
+    true,
+    'collapsed state survives a parent child-list re-render',
+  );
+
+  const indent = await page.evaluate(() => {
+    const host = document.getElementById('hint-condition-host');
+    return {
+      children: [...host.querySelectorAll('.condition-children')].every((node) => {
+        const style = getComputedStyle(node);
+        return style.marginLeft === '0px' && style.paddingLeft === '0px';
+      }),
+      bodies: [...host.querySelectorAll('.condition-node-body')]
+        .every((node) => getComputedStyle(node).paddingLeft === '12px'),
+    };
+  });
+  assert.deepEqual(indent, { children: true, bodies: true }, 'nesting indent is exactly the node body padding at each level');
+  assert.deepEqual(errors, []);
+});
+
+test('the tab-nav cannot scroll vertically', async (t) => {
+  if (skipReason) return t.skip(skipReason);
+  const { page, close } = await builderPage();
+  t.after(close);
+
+  const overflow = await page.evaluate(() => {
+    const nav = document.getElementById('tab-nav');
+    return nav.scrollHeight - nav.clientHeight;
+  });
+  assert.ok(overflow <= 0, `tab-nav vertical overflow was ${overflow}px`);
 });
 
 test('the Code tab persists starter code into the config and the URL into localStorage', async (t) => {

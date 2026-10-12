@@ -24,7 +24,6 @@
       <button class="tab-btn" data-tab="hints">💡 Hints</button>
       <button class="tab-btn" data-tab="tests">✅ Tests</button>
       <button class="tab-btn" data-tab="preview">👁️ Preview</button>
-      <button class="tab-btn" data-tab="export">📦 Export</button>
     </nav>
 
     <main id="tab-content">
@@ -184,22 +183,6 @@
         </div>
       </section>
 
-      <!-- Export Tab -->
-      <section id="tab-export" class="tab-panel">
-        <div class="form-section">
-          <h2>Export</h2>
-          <p class="tab-note">
-            JSON exports the activity config (works everywhere). SCORM export validates the config
-            and every AST pattern first, then builds a Moodle-uploadable package — the Python runtime
-            is bundled unless a Pyodide base URL is set on the Code tab.
-          </p>
-          <div id="export-status" class="export-status"></div>
-          <div class="form-row">
-            <button id="btn-export-json-tab" class="btn btn-primary" type="button">💾 Export JSON</button>
-            <button id="btn-export-scorm-tab" class="btn btn-accent" type="button">📦 Export SCORM</button>
-          </div>
-        </div>
-      </section>
     </main>
 
     <!-- Validation toast -->

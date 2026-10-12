@@ -44,7 +44,7 @@ suite, network for the first Pyodide fetch (cached in `vendor/pyodide/`).
 
 ## Workflow
 
-The builder has six tabs:
+The builder has five tabs:
 
 1. **Config** — metadata (title auto-generates the activity ID), instructions, UI
    settings (`show_hint_panel`, `suspend_data_limit`), results behavior.
@@ -52,11 +52,14 @@ The builder has six tabs:
    working directory (text or base64 binary), the optional Pillow package, and the
    Pyodide base URL (remembered in this browser).
 3. **Hints** — trigger-based hints (`code_change` / `test_fail` / `manual`) with
-   delay, priority, checklist/triggered display, and a condition editor.
-4. **Tests** — five test types (below), points, feedback, per-test setup files.
+   delay, priority, checklist/triggered display, and a condition editor with nested,
+   collapsible boolean groups.
+4. **Tests** — five test types (below), points, feedback, per-test setup files;
+   `code_structure` conditions use the same recursive editor.
 5. **Preview** — the real student runtime in an iframe (requires HTTP).
-6. **Export** — validation + JSON / SCORM export (SCORM validates every AST pattern
-   first).
+
+JSON and SCORM exports are available from the builder header; SCORM export validates
+every AST pattern first.
 
 ## Project Structure
 
@@ -67,7 +70,7 @@ src/shared/               schema, validator, normalizer, test-config, hint evalu
 src/scorm-template/       the student runtime: index.html, style.css, app.js,
                           python-engine.js, test-runner.js, hint-engine.js,
                           scorm-wrapper.js, two-layer persistence
-src/activity-builder/     the authoring tool: config/code/hints/tests/preview/export tabs,
+src/activity-builder/     the authoring tool: config/code/hints/tests/preview tabs,
                           condition-builder.js
 scripts/                  build.js, dev.js, export-scorm.js, fetch-pyodide.js
 examples/                 hello-world.json, greet-input.json, csv-average.json

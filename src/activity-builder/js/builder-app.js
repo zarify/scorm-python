@@ -143,9 +143,7 @@ function setupTabs() {
 
 function setupHeaderActions() {
   document.getElementById('btn-export-json').addEventListener('click', handleJsonExport);
-  document.getElementById('btn-export-json-tab')?.addEventListener('click', handleJsonExport);
   document.getElementById('btn-export-scorm').addEventListener('click', handleScormExportFromButton);
-  document.getElementById('btn-export-scorm-tab')?.addEventListener('click', handleScormExportFromButton);
 
   document.getElementById('btn-import').addEventListener('click', () => {
     document.getElementById('file-import').click();
