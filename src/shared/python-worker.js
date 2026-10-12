@@ -78,13 +78,37 @@ function installWasmStreamingFallback() {
   }
 }
 
+// The bundled runtime ships its entry points under `.js` names because SCORM
+// hosts (Moodle's pluginfile.php among them) serve unknown extensions as
+// application/octet-stream, which browsers reject for module imports
+// (Firefox: NS_ERROR_CORRUPTED_CONTENT). Hosts reached via `pyodide_base_url`
+// may serve the stock upstream layout instead (jsDelivr ships `pyodide.mjs`),
+// so try both names and keep whichever module actually exports loadPyodide.
+const PYODIDE_LOADER_CANDIDATES = ['pyodide.js', 'pyodide.mjs'];
+
+async function importPyodideLoader(indexURL) {
+  const failures = [];
+  for (const name of PYODIDE_LOADER_CANDIDATES) {
+    let module;
+    try {
+      module = await import(`${indexURL}${name}`);
+    } catch (err) {
+      failures.push(`${name}: ${err instanceof Error ? err.message : String(err)}`);
+      continue;
+    }
+    if (typeof module.loadPyodide === 'function') return module;
+    failures.push(`${name}: module has no loadPyodide export`);
+  }
+  throw new Error(`Failed to import the Pyodide loader from ${indexURL} — ${failures.join('; ')}`);
+}
+
 function ensureInitialized(indexURL, packages) {
   if (initPromise) return initPromise;
   initPromise = (async () => {
     // Some SCORM viewers serve .wasm as application/octet-stream. Pyodide
     // prefers streaming compilation, but we can fall back to bytes cleanly.
     installWasmStreamingFallback();
-    const module = await import(`${indexURL}pyodide.mjs`);
+    const module = await importPyodideLoader(indexURL);
     const py = await module.loadPyodide({ indexURL });
 
     if (Array.isArray(packages) && packages.length > 0) {

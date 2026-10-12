@@ -24,7 +24,6 @@ export function initPreviewTab() {
 
   if (isFileMode()) {
     document.getElementById('preview-iframe')?.classList.add('hidden');
-    document.getElementById('preview-file-notice')?.classList.remove('hidden');
   }
 }
 
@@ -34,12 +33,10 @@ function refreshPreview() {
 
   if (isFileMode()) {
     iframe.classList.add('hidden');
-    document.getElementById('preview-file-notice')?.classList.remove('hidden');
     iframe.removeAttribute('srcdoc');
     return;
   }
 
-  document.getElementById('preview-file-notice')?.classList.add('hidden');
   iframe.classList.remove('hidden');
   iframe.srcdoc = buildPreviewHtml(getConfig());
 }

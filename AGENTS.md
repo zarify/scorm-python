@@ -101,6 +101,13 @@ Build/serve: `scripts/build.js` (esbuild IIFE bundles + asset copies),
 - **Pyodide pin**: `PYODIDE_VERSION` in `scripts/fetch-pyodide.js` only. Never bump without
   re-running `test-py/` and the browser suite (314 stream callbacks deliver `Uint8Array`, and
   `setStdout.write` must return the **byte count** or Pyodide warns and re-delivers chunks).
+- **Pyodide entry points ship as `.js`** (`pyodide.js`, `pyodide.asm.js` — renamed and
+  patched from the upstream `.mjs` names by `normalizeVendorLayout()` in
+  `scripts/fetch-pyodide.js`): SCORM hosts (Moodle's `pluginfile.php` included) serve
+  unknown extensions as `application/octet-stream`, which browsers reject for module
+  imports (Firefox: `NS_ERROR_CORRUPTED_CONTENT`). The worker imports `pyodide.js` first
+  and falls back to `pyodide.mjs` for stock-upstream `pyodide_base_url` hosts. Never ship
+  `.mjs` files in an export.
 - **The test static server must serve `.mjs` as `text/javascript` and `.wasm` as
   `application/wasm`** (`test/browser/helpers/harness.js`) — module scripts and streaming
   compilation reject wrong MIME types.
@@ -174,7 +181,7 @@ node --test test/<file>.test.js  # one suite
 
 - Three suites plus browser scenarios; **all four must be green** before handing work back:
   `npm test` (232), `npm run test:python` (87), `npm run build && npm run export` (both modes),
-  `npm run test:browser` (26 across 9 files).
+  `npm run test:browser` (27 across 10 files).
 - Browser tests **skip** (not fail) when no Chrome/Chromium launches; `PLAYWRIGHT_CHANNEL`
   overrides the channel. They drive the real Pyodide runtime against a mock LMS
   (`test/browser/helpers/mock-lms.js`, localStorage-backed `window.API`).

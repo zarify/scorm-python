@@ -33,8 +33,12 @@ const CONTENT_TYPES = {
   '.wasm': 'application/wasm',
 };
 
-/** Serve a directory over http on an ephemeral port. */
-export async function startStaticServer(rootDirectory = DIST) {
+/**
+ * Serve a directory over http on an ephemeral port. `contentTypes` replaces
+ * the MIME map (default `CONTENT_TYPES`); anything unmapped is served as
+ * application/octet-stream.
+ */
+export async function startStaticServer(rootDirectory = DIST, { contentTypes = CONTENT_TYPES } = {}) {
   const root = resolve(rootDirectory);
 
   const server = createServer(async (request, response) => {
@@ -50,7 +54,7 @@ export async function startStaticServer(rootDirectory = DIST) {
 
       const body = await readFile(filePath);
       response.writeHead(200, {
-        'content-type': CONTENT_TYPES[extname(filePath)] ?? 'application/octet-stream',
+        'content-type': contentTypes[extname(filePath)] ?? 'application/octet-stream',
         'cache-control': 'no-store',
       });
       response.end(body);
@@ -153,7 +157,7 @@ async function findCachedChromiumExecutables() {
  * The package's own `config/activity_config.json` is replaced in a copy, so the
  * real bundle and HTML are exercised.
  */
-export async function serveRuntimeWithConfig(config) {
+export async function serveRuntimeWithConfig(config, serverOptions = {}) {
   const { mkdtemp, cp, writeFile } = await import('node:fs/promises');
   const { tmpdir } = await import('node:os');
 
@@ -161,7 +165,7 @@ export async function serveRuntimeWithConfig(config) {
   await cp(join(DIST, 'scorm-template'), directory, { recursive: true });
   await writeFile(join(directory, 'config/activity_config.json'), JSON.stringify(config, null, 2));
 
-  return startStaticServer(directory);
+  return startStaticServer(directory, serverOptions);
 }
 
 /** A page plus a recorder for the errors the browser reports. */

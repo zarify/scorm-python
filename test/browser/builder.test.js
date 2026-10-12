@@ -189,7 +189,10 @@ test('Export SCORM honors the Pyodide skip rule', async (t) => {
   const bundled = await exportZip(page);
   const bundledNames = Object.keys(bundled.files);
   assert.ok(bundledNames.includes('pyodide/pyodide.asm.wasm'), 'bundled zip carries the wasm runtime');
-  assert.ok(bundledNames.includes('pyodide/pyodide.mjs'), 'bundled zip carries the loader');
+  assert.ok(bundledNames.includes('pyodide/pyodide.js'), 'bundled zip carries the loader');
+  assert.ok(bundledNames.includes('pyodide/pyodide.asm.js'), 'bundled zip carries the asm module');
+  assert.ok(!bundledNames.some((name) => name.endsWith('.mjs')),
+    'bundled zip ships no .mjs files (SCORM hosts serve them with a MIME type browsers reject)');
   assert.ok(bundledNames.includes('python/harness.py'), 'bundled zip carries the harness');
   assert.ok(bundledNames.includes('js/python-worker.js'), 'bundled zip carries the worker');
   assert.ok(bundledNames.includes('imsmanifest.xml'), 'the manifest is present');

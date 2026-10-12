@@ -1,5 +1,5 @@
 import esbuild from 'esbuild';
-import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -31,6 +31,9 @@ function copyPythonRuntime(outDir) {
   mkdirSync(resolve(outDir, 'js'), { recursive: true });
   copyIfExists(resolve(SRC, 'shared/python-worker.js'), resolve(outDir, 'js/python-worker.js'));
   copyIfExists(resolve(SRC, 'shared/python'), resolve(outDir, 'python'));
+  // Mirror vendor/pyodide exactly: clear first so files renamed or dropped
+  // between builds cannot linger in dist/ or the exported zip.
+  rmSync(resolve(outDir, 'pyodide'), { recursive: true, force: true });
   copyIfExists(resolve(ROOT, 'vendor/pyodide'), resolve(outDir, 'pyodide'));
 }
 

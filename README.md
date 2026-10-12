@@ -271,7 +271,15 @@ button before export.
 - **Export modes** — *bundled*: the zip carries `pyodide/` (~7 MB) and works
   offline with zero configuration; *external URL*: set `python_setup.pyodide_base_url`
   and the zip drops `pyodide/` (~1 MB), loading the pinned runtime from that URL
-  instead (must serve these exact files with CORS headers; jsDelivr does).
+  instead (CORS required; jsDelivr serves it).
+- **Runtime entry points are `.js`-named** — `pyodide/pyodide.js` and
+  `pyodide/pyodide.asm.js` are upstream's `pyodide.mjs`/`pyodide.asm.mjs`, renamed and
+  patched by `normalizeVendorLayout()` (`scripts/fetch-pyodide.js`). SCORM hosts —
+  Moodle's `pluginfile.php` included — serve unknown extensions as
+  `application/octet-stream`, which browsers reject for module imports (Firefox reports
+  `NS_ERROR_CORRUPTED_CONTENT`), while `.js` is always mapped to a JavaScript MIME type.
+  The worker imports `pyodide.js` first and falls back to `pyodide.mjs`, so
+  external-URL hosts serving the stock upstream names work unchanged.
 
 ## Limitations
 
