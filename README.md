@@ -271,18 +271,20 @@ button before export.
 - **SCORM 1.2** — score (`cmi.core.score.raw`), lesson status, and suspend data with
   write verification, automatic limit fallback, and commit coalescing so background edits
   do not turn into a server round-trip on every pause.
-- **Export modes** — *bundled*: the zip carries `pyodide/` (~7 MB) and works
-  offline with zero configuration; *external URL*: set `python_setup.pyodide_base_url`
-  and the zip drops `pyodide/` (~1 MB), loading the pinned runtime from that URL
-  instead (CORS required; jsDelivr serves it).
-- **Runtime entry points are `.js`-named** — `pyodide/pyodide.js` and
-  `pyodide/pyodide.asm.js` are upstream's `pyodide.mjs`/`pyodide.asm.mjs`, renamed and
-  patched by `normalizeVendorLayout()` (`scripts/fetch-pyodide.js`). SCORM hosts —
-  Moodle's `pluginfile.php` included — serve unknown extensions as
-  `application/octet-stream`, which browsers reject for module imports (Firefox reports
-  `NS_ERROR_CORRUPTED_CONTENT`), while `.js` is always mapped to a JavaScript MIME type.
-  The worker imports `pyodide.js` first and falls back to `pyodide.mjs`, so
-  external-URL hosts serving the stock upstream names work unchanged.
+- **Export modes** — *bundled*: the default zip is ~5.75 MiB (~6.03 MB) and works
+  offline with zero configuration; the *external URL* zip is ~0.20 MiB.
+  Set `python_setup.pyodide_base_url` to load the pinned runtime from that URL instead
+  (CORS required; jsDelivr serves it). The default bundled student transfer is
+  ~6.54 MB of raw files, including app assets, down from ~14 MB. Pillow's
+  wheel is packaged only when `python_setup.packages` includes `pillow`.
+- **Runtime entry points are `.js`-named** — `pyodide/pyodide.js` and the
+  precompressed `pyodide/pyodide.asm.js.gz` retain the upstream `.js` module names after
+  decompression; `normalizeVendorLayout()` (`scripts/fetch-pyodide.js`) renames and patches
+  upstream's `.mjs` entry points. SCORM hosts — Moodle's `pluginfile.php` included — serve
+  unknown extensions as `application/octet-stream`, which browsers reject for module imports
+  (Firefox reports `NS_ERROR_CORRUPTED_CONTENT`), while `.js` is always mapped to JavaScript.
+  The worker imports `pyodide.js` first and falls back to `pyodide.mjs`, so external-URL hosts
+  serving the stock upstream names work unchanged.
 
 ## Limitations
 
@@ -291,13 +293,21 @@ button before export.
 - **No true sandbox** — Pyodide blocks network access and the harness rejects
   dangerous imports (`socket`, `js`, `subprocess`, …), but this is a guardrail, not a
   security boundary.
+- **Bundled standard library and compressed assets** — the bundled stdlib omits
+  `ctypes`, `doctest`, `imaplib`, `mailbox`, `multiprocessing`, `optparse`, `pdb`,
+  `pickletools`, `poplib`, `pydoc`, `smtplib`, `tarfile`, `unittest`, `wsgiref`,
+  `xmlrpc`, and `_pyrepl`; `ctypes` and `multiprocessing` are rejected by the harness,
+  and other omitted imports raise `ImportError`. `asyncio` and `concurrent` remain because
+  Pyodide's bootstrap requires them. Runtime assets ship pre-gzipped; the worker
+  decompresses with `DecompressionStream` or the bundled decoder.
 - **Replay determinism** — interactive input replays the program; `random` is reseeded
   per session, but wall-clock-dependent behavior may differ between attempts.
 - **Builder needs HTTP** — Python preview and AST-pattern validation require
   `npm run dev`; from `file://` you can still edit config, export JSON, and export
   SCORM for pattern-free activities.
-- **Bundled export size** — the default bundled zip is ~7 MB (0.2 MB with an external URL); Moodle's `maxbytes` must
-  allow uploads that large.
+- **Bundled export size** — the default bundled zip is ~5.75 MiB (~6.03 MB); external-URL
+  exports are ~0.20 MiB. First-run student transfer is ~6.54 MB raw, previously ~14 MB.
+  Moodle's `maxbytes` must allow the bundled upload size.
 - **Timeouts are wall-clock** — a program busy-waiting on `time.sleep`-style behavior
   or pure computation is stopped by the watchdogs above; C-level hangs can only be
   stopped by the JS deadline or the Stop button.

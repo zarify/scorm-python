@@ -6,9 +6,9 @@
  * package relying on `.mjs` files never boots there — browsers reject module
  * imports with a non-JavaScript MIME type (Firefox reports
  * NS_ERROR_CORRUPTED_CONTENT on the loader request). This serves the built
- * runtime with only .html/.js/.css/.xml typed and asserts Python still
- * reaches ready, which exercises the loader import, the wasm bytes fallback,
- * and `import harness` over python_stdlib.zip.
+ * runtime with only .html/.js/.css/.xml typed and asserts Python still reaches ready,
+ * exercising gzip decoding, blob-based asm import, the asset fetch shim, and the
+ * stripped standard library under that hostile MIME map.
  */
 
 import { test, before, after } from 'node:test';
@@ -26,7 +26,7 @@ const HELLO_WORLD = JSON.parse(
 );
 
 // What a Moodle-like host knows: the common document types. Everything
-// else — .wasm, .json, .zip, .whl, .mjs — goes out as application/octet-stream.
+// else — .wasm, .gz, .json, .zip, .whl, .mjs — goes out as application/octet-stream.
 const MOODLE_CONTENT_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -70,5 +70,13 @@ test('the runtime reaches ready when the host serves unknown extensions as octet
   );
 
   assert.match(await page.textContent('#status-bar'), /Python is ready/);
+  assert.ok(
+    server.requests.some((url) => url.endsWith('/pyodide/pyodide.asm.wasm.gz')),
+    'the worker fetches the precompressed wasm asset',
+  );
+  assert.ok(
+    !server.requests.some((url) => url.endsWith('/pyodide/pyodide.asm.wasm')),
+    'the worker never requests the raw wasm asset',
+  );
   assert.deepEqual(errors, []);
 });

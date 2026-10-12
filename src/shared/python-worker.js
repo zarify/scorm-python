@@ -28,6 +28,8 @@ let pyodideInstance = null;
 let harnessModule = null;
 let initPromise = null;
 let initError = null;
+const assetCache = new Map();
+const assetMimeTypes = new Map();
 
 /** Op currently executing — stdout/stderr callbacks tag messages with it. */
 let currentOp = null;
@@ -45,6 +47,101 @@ function failLoad(err) {
   post({ kind: 'load-error', message: initError });
 }
 
+function assetKey(url) {
+  return new URL(url, self.location.href).href;
+}
+
+async function loadGzipFirst(url, mime = 'application/octet-stream') {
+  const key = assetKey(url);
+  assetMimeTypes.set(key, mime);
+  if (!assetCache.has(key)) {
+    const pending = (async () => {
+      let gzipFailure;
+      try {
+        const response = await self.fetch(`${url}.gz`);
+        if (!response.ok) {
+          gzipFailure = new Error(`HTTP ${response.status} for ${url}.gz`);
+        } else if (typeof DecompressionStream === 'function') {
+          return new Uint8Array(await new Response(
+            response.body.pipeThrough(new DecompressionStream('gzip')),
+          ).arrayBuffer());
+        } else {
+          const { gunzip } = await import(new URL('./gunzip.js', import.meta.url));
+          return gunzip(new Uint8Array(await response.arrayBuffer()));
+        }
+      } catch (err) {
+        gzipFailure = err;
+      }
+
+      try {
+        const response = await self.fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return new Uint8Array(await response.arrayBuffer());
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : String(err);
+        const gzipReason = gzipFailure
+          ? `; gzip attempt: ${gzipFailure instanceof Error ? gzipFailure.message : String(gzipFailure)}`
+          : '';
+        throw new Error(`Failed to load ${url} — ${reason}${gzipReason}`);
+      }
+    })();
+    assetCache.set(key, pending);
+  }
+  return assetCache.get(key);
+}
+
+function installAssetFetchShim() {
+  if (self.__SCORM_ASSET_FETCH_SHIM__) return;
+  self.__SCORM_ASSET_FETCH_SHIM__ = true;
+  const originalFetch = self.fetch.bind(self);
+  self.fetch = async (url, options) => {
+    const requestUrl = typeof url === 'string' ? url : (url.url ?? url.href);
+    let request;
+    try {
+      request = new URL(requestUrl, self.location.href);
+    } catch {
+      return originalFetch(url, options);
+    }
+    if (!request.pathname.endsWith('/pyodide.asm.wasm')
+      && !request.pathname.endsWith('/pyodide-lock.json')) {
+      return originalFetch(url, options);
+    }
+    const pending = assetCache.get(request.href);
+    if (!pending) return originalFetch(url, options);
+    const bytes = await pending;
+    return new Response(bytes, {
+      headers: { 'content-type': assetMimeTypes.get(request.href) ?? 'application/octet-stream' },
+    });
+  };
+}
+
+async function loadAsmModule(indexURL) {
+  const url = new URL('pyodide.asm.js', indexURL).href;
+  const bytes = await loadGzipFirst(url, 'text/javascript');
+  const text = new TextDecoder().decode(bytes);
+  const blobUrl = URL.createObjectURL(new Blob([text], { type: 'text/javascript' }));
+  let blobFailure;
+  try {
+    const module = await import(blobUrl);
+    if (typeof module.default === 'function') return module.default;
+    throw new Error('blob module has no default Pyodide factory');
+  } catch (err) {
+    blobFailure = err;
+  } finally {
+    URL.revokeObjectURL(blobUrl);
+  }
+
+  try {
+    const module = await import(url);
+    if (typeof module.default === 'function') return module.default;
+    throw new Error('module has no default Pyodide factory');
+  } catch (err) {
+    const blobReason = blobFailure instanceof Error ? blobFailure.message : String(blobFailure);
+    const directReason = err instanceof Error ? err.message : String(err);
+    throw new Error(`Failed to load ${url} — blob import: ${blobReason}; direct import: ${directReason}`);
+  }
+}
+
 function installWasmStreamingFallback() {
   if (self.__PYODIDE_WASM_STREAMING_FALLBACK__) return;
   self.__PYODIDE_WASM_STREAMING_FALLBACK__ = true;
@@ -57,7 +154,13 @@ function installWasmStreamingFallback() {
       } catch (err) {
         const response = await Promise.resolve(source);
         if (!(response instanceof Response)) throw err;
-        const bytes = await response.arrayBuffer();
+        let bytes;
+        try {
+          bytes = await response.arrayBuffer();
+        } catch {
+          const fresh = await self.fetch(response.url || source.url || source);
+          bytes = await fresh.arrayBuffer();
+        }
         return WebAssembly.instantiate(bytes, imports);
       }
     };
@@ -71,45 +174,34 @@ function installWasmStreamingFallback() {
       } catch (err) {
         const response = await Promise.resolve(source);
         if (!(response instanceof Response)) throw err;
-        const bytes = await response.arrayBuffer();
+        let bytes;
+        try {
+          bytes = await response.arrayBuffer();
+        } catch {
+          const fresh = await self.fetch(response.url || source.url || source);
+          bytes = await fresh.arrayBuffer();
+        }
         return WebAssembly.compile(bytes);
       }
     };
   }
 }
 
-// The bundled runtime ships its entry points under `.js` names because SCORM
-// hosts (Moodle's pluginfile.php among them) serve unknown extensions as
-// application/octet-stream, which browsers reject for module imports
-// (Firefox: NS_ERROR_CORRUPTED_CONTENT). Hosts reached via `pyodide_base_url`
-// may serve the stock upstream layout instead (jsDelivr ships `pyodide.mjs`),
-// so try both names and keep whichever module actually exports loadPyodide.
-const PYODIDE_LOADER_CANDIDATES = ['pyodide.js', 'pyodide.mjs'];
-
-async function importPyodideLoader(indexURL) {
-  const failures = [];
-  for (const name of PYODIDE_LOADER_CANDIDATES) {
-    let module;
-    try {
-      module = await import(`${indexURL}${name}`);
-    } catch (err) {
-      failures.push(`${name}: ${err instanceof Error ? err.message : String(err)}`);
-      continue;
-    }
-    if (typeof module.loadPyodide === 'function') return module;
-    failures.push(`${name}: module has no loadPyodide export`);
-  }
-  throw new Error(`Failed to import the Pyodide loader from ${indexURL} — ${failures.join('; ')}`);
-}
-
 function ensureInitialized(indexURL, packages) {
   if (initPromise) return initPromise;
   initPromise = (async () => {
-    // Some SCORM viewers serve .wasm as application/octet-stream. Pyodide
-    // prefers streaming compilation, but we can fall back to bytes cleanly.
     installWasmStreamingFallback();
+    installAssetFetchShim();
+
+    const wasmURL = new URL('pyodide.asm.wasm', indexURL).href;
+    const lockURL = new URL('pyodide-lock.json', indexURL).href;
+    await Promise.all([
+      loadGzipFirst(wasmURL, 'application/wasm'),
+      loadGzipFirst(lockURL, 'application/json'),
+    ]);
     const module = await importPyodideLoader(indexURL);
-    const py = await module.loadPyodide({ indexURL });
+    const createPyodideModule = await loadAsmModule(indexURL);
+    const py = await module.loadPyodide({ indexURL, createPyodideModule });
 
     if (Array.isArray(packages) && packages.length > 0) {
       await py.loadPackage(packages);
@@ -172,6 +264,30 @@ function ensureInitialized(indexURL, packages) {
     throw err;
   });
   return initPromise;
+}
+
+// The bundled runtime ships its entry points under `.js` names because SCORM
+// hosts (Moodle's pluginfile.php among them) serve unknown extensions as
+// application/octet-stream, which browsers reject for module imports
+// (Firefox: NS_ERROR_CORRUPTED_CONTENT). Hosts reached via `pyodide_base_url`
+// may serve the stock upstream layout instead (jsDelivr ships `pyodide.mjs`),
+// so try both names and keep whichever module actually exports loadPyodide.
+const PYODIDE_LOADER_CANDIDATES = ['pyodide.js', 'pyodide.mjs'];
+
+async function importPyodideLoader(indexURL) {
+  const failures = [];
+  for (const name of PYODIDE_LOADER_CANDIDATES) {
+    let module;
+    try {
+      module = await import(`${indexURL}${name}`);
+    } catch (err) {
+      failures.push(`${name}: ${err instanceof Error ? err.message : String(err)}`);
+      continue;
+    }
+    if (typeof module.loadPyodide === 'function') return module;
+    failures.push(`${name}: module has no loadPyodide export`);
+  }
+  throw new Error(`Failed to import the Pyodide loader from ${indexURL} — ${failures.join('; ')}`);
 }
 
 function isStale(id) {

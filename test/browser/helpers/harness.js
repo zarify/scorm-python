@@ -30,6 +30,7 @@ const CONTENT_TYPES = {
   '.xml': 'application/xml; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.zip': 'application/zip',
+  '.gz': 'application/gzip',
   '.wasm': 'application/wasm',
 };
 
@@ -40,8 +41,10 @@ const CONTENT_TYPES = {
  */
 export async function startStaticServer(rootDirectory = DIST, { contentTypes = CONTENT_TYPES } = {}) {
   const root = resolve(rootDirectory);
+  const requests = [];
 
   const server = createServer(async (request, response) => {
+    requests.push(request.url);
     try {
       const url = new URL(request.url, 'http://localhost');
       const requested = normalize(decodeURIComponent(url.pathname)).replace(/^(\.\.[/\\])+/, '');
@@ -69,6 +72,7 @@ export async function startStaticServer(rootDirectory = DIST, { contentTypes = C
 
   return {
     origin: `http://127.0.0.1:${port}`,
+    requests,
     async close() {
       await new Promise((resolve_) => server.close(resolve_));
     },

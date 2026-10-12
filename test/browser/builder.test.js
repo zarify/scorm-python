@@ -283,27 +283,50 @@ async function exportZip(page) {
   return JSZip.loadAsync(await readFile(zipPath));
 }
 
-test('Export SCORM honors the Pyodide skip rule', async (t) => {
+test('Export SCORM ships gzip runtime assets and includes Pillow only when selected', async (t) => {
   if (skipReason) return t.skip(skipReason);
   const { page, errors, close } = await builderPage();
   t.after(close);
 
   await importConfigIntoBuilder(page, join(EXAMPLES, 'hello-world.json'));
+  // Keep this export-contract test independent of runtime/network validation.
+  await page.evaluate(() => {
+    const config = window.ActivityBuilder.getConfig();
+    config.hints = [];
+    config.evaluation.test_cases = config.evaluation.test_cases
+      .filter((testCase) => testCase.type !== 'code_structure');
+  });
   await openTab(page, 'code');
 
-  // Bundled mode: URL empty → the runtime rides along.
+  // Bundled mode: URL empty → compressed runtime rides along.
   await page.fill('#pyodide-base-url', '');
   const bundled = await exportZip(page);
   const bundledNames = Object.keys(bundled.files);
-  assert.ok(bundledNames.includes('pyodide/pyodide.asm.wasm'), 'bundled zip carries the wasm runtime');
-  assert.ok(bundledNames.includes('pyodide/pyodide.js'), 'bundled zip carries the loader');
-  assert.ok(bundledNames.includes('pyodide/pyodide.asm.js'), 'bundled zip carries the asm module');
+  for (const name of [
+    'pyodide/pyodide.asm.wasm.gz',
+    'pyodide/pyodide.asm.js.gz',
+    'pyodide/pyodide-lock.json.gz',
+    'pyodide/pyodide.js',
+    'js/gunzip.js',
+  ]) {
+    assert.ok(bundledNames.includes(name), `bundled zip carries ${name}`);
+  }
+  for (const name of [
+    'pyodide/pyodide.asm.wasm',
+    'pyodide/pyodide.asm.js',
+    'pyodide/pyodide-lock.json',
+  ]) {
+    assert.ok(!bundledNames.includes(name), `bundled zip omits raw ${name}`);
+  }
   assert.ok(!bundledNames.some((name) => name.endsWith('.mjs')),
     'bundled zip ships no .mjs files (SCORM hosts serve them with a MIME type browsers reject)');
   assert.ok(bundledNames.includes('python/harness.py'), 'bundled zip carries the harness');
   assert.ok(bundledNames.includes('js/python-worker.js'), 'bundled zip carries the worker');
   assert.ok(bundledNames.includes('imsmanifest.xml'), 'the manifest is present');
   assert.ok(bundledNames.includes('js/app.bundle.js'), 'the student bundle is present');
+  assert.ok(!bundledNames.some((name) => /^pyodide\/pillow-.*\.whl$/.test(name)),
+    'default packages omit the Pillow wheel');
+
 
   // External mode: URL set → pyodide/ omitted, everything else stays.
   await page.fill('#pyodide-base-url', 'https://cdn.jsdelivr.net/pyodide/v314.0.7/full/');
@@ -317,6 +340,12 @@ test('Export SCORM honors the Pyodide skip rule', async (t) => {
   assert.ok(externalNames.includes('python/harness.py'));
   assert.ok(externalNames.includes('imsmanifest.xml'));
   assert.ok(externalNames.includes('config/activity_config.json'));
+  await page.fill('#pyodide-base-url', '');
+  await page.check('#packages-list input[type="checkbox"]');
+  const withPillow = await exportZip(page);
+  assert.ok(Object.keys(withPillow.files).some((name) => /^pyodide\/pillow-.*\.whl$/.test(name)),
+    'selecting Pillow includes its wheel');
+  await page.uncheck('#packages-list input[type="checkbox"]');
   assert.deepEqual(errors, []);
 });
 

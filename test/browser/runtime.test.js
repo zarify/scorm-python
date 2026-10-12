@@ -122,3 +122,64 @@ test('empty code scores zero and the LMS records a failed attempt', async (t) =>
   assert.equal(model['cmi.core.lesson_status'], 'failed');
   assert.deepEqual(errors, []);
 });
+
+test('the bundled stdlib imports the supported module matrix', async (t) => {
+  if (skipReason) return t.skip(skipReason);
+  // http/urllib are intentionally rejected by the harness, independent of the stdlib archive.
+  const source = `import ast, base64, collections, csv, dataclasses, datetime, decimal, enum
+import fractions, functools, hashlib, hmac, inspect, io, itertools, json, logging
+import math, os, pathlib, pickle, random, re, shutil, sqlite3, statistics, string
+import struct, sys, tempfile, textwrap, time, traceback, typing, warnings, zlib
+import email, asyncio, concurrent.futures
+print("imports-ok")`;
+  const { page, errors, close } = await runtimePage({
+    ...HELLO_WORLD,
+    python_setup: { ...HELLO_WORLD.python_setup, starter_code: source },
+  });
+  t.after(close);
+
+  await page.waitForFunction(
+    () => /Activity loaded/.test(document.getElementById('status-bar')?.textContent ?? ''),
+    undefined,
+    { timeout: 30_000 },
+  );
+  await page.click('#btn-run');
+  await page.waitForFunction(
+    () => /Program finished/.test(document.getElementById('status-bar')?.textContent ?? ''),
+    undefined,
+    { timeout: 30_000 },
+  );
+
+  const stdout = await page.evaluate(
+    () => [...document.querySelectorAll('[data-console-transcript] .console-entry-output .console-entry-value')]
+      .map((entry) => entry.textContent),
+  );
+  assert.deepEqual(stdout, ['imports-ok']);
+  assert.deepEqual(errors, []);
+});
+
+test('a curated stripped stdlib module raises ImportError', async (t) => {
+  if (skipReason) return t.skip(skipReason);
+  const { page, errors, close } = await runtimePage({
+    ...HELLO_WORLD,
+    python_setup: { ...HELLO_WORLD.python_setup, starter_code: 'import doctest' },
+  });
+  t.after(close);
+
+  await page.waitForFunction(
+    () => /Activity loaded/.test(document.getElementById('status-bar')?.textContent ?? ''),
+    undefined,
+    { timeout: 30_000 },
+  );
+  await page.click('#btn-run');
+  await page.waitForFunction(
+    () => /Program stopped/.test(document.getElementById('status-bar')?.textContent ?? ''),
+    undefined,
+    { timeout: 30_000 },
+  );
+
+  const transcript = await page.textContent('[data-console-transcript]');
+  assert.match(transcript, /doctest/);
+  assert.match(transcript, /ModuleNotFoundError|ImportError/);
+  assert.deepEqual(errors, []);
+});

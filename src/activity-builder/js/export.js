@@ -41,12 +41,13 @@ export async function exportSCORM(config) {
   zip.file('css/style.css', assets.styleCss);
   zip.file('js/app.bundle.js', withoutSourceMapReference(assets.appBundleJs));
   zip.file('js/python-worker.js', assets.workerJs);
+  zip.file('js/gunzip.js', assets.gunzipJs);
   zip.file('python/astmatch.py', assets.astmatchPy);
   zip.file('python/harness.py', assets.harnessPy);
 
   const baseUrl = String(config.python_setup?.pyodide_base_url || '').trim();
   if (baseUrl === '') {
-    await addBundledPyodide(zip);
+    await addBundledPyodide(zip, config);
   }
 
   const content = await zip.generateAsync({
@@ -58,7 +59,7 @@ export async function exportSCORM(config) {
   downloadBlob(content, `${config.metadata?.activity_id || 'python-scorm-activity'}.zip`);
 }
 
-async function addBundledPyodide(zip) {
+async function addBundledPyodide(zip, config) {
   let names;
   try {
     const response = await fetch(new URL('pyodide-manifest.json', window.location.href));
@@ -74,7 +75,9 @@ async function addBundledPyodide(zip) {
     throw new Error('pyodide-manifest.json is empty — run `node scripts/fetch-pyodide.js` and rebuild.');
   }
 
+  const includePillow = (config.python_setup?.packages ?? []).includes('pillow');
   for (const name of names) {
+    if (/^pillow-.*\.whl$/.test(name) && !includePillow) continue;
     const response = await fetch(new URL(`pyodide/${name}`, window.location.href));
     if (!response.ok) {
       throw new Error(`Failed to fetch pyodide/${name} (HTTP ${response.status})`);
@@ -114,7 +117,8 @@ function hasRuntimeAssets(value) {
     && value.styleCss.length > 0
     && typeof value.workerJs === 'string'
     && typeof value.astmatchPy === 'string'
-    && typeof value.harnessPy === 'string',
+    && typeof value.harnessPy === 'string'
+    && typeof value.gunzipJs === 'string',
   );
 }
 

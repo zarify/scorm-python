@@ -1,6 +1,6 @@
 import esbuild from 'esbuild';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
-import { resolve, dirname } from 'path';
+import { basename, resolve, dirname, sep } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -21,20 +21,27 @@ async function bundleScormApp(outfile) {
   });
 }
 
-function copyIfExists(src, dest) {
+function copyIfExists(src, dest, options = {}) {
   if (existsSync(src)) {
-    cpSync(src, dest, { recursive: true });
+    cpSync(src, dest, { recursive: true, ...options });
   }
 }
 
 function copyPythonRuntime(outDir) {
   mkdirSync(resolve(outDir, 'js'), { recursive: true });
   copyIfExists(resolve(SRC, 'shared/python-worker.js'), resolve(outDir, 'js/python-worker.js'));
-  copyIfExists(resolve(SRC, 'shared/python'), resolve(outDir, 'python'));
-  // Mirror vendor/pyodide exactly: clear first so files renamed or dropped
-  // between builds cannot linger in dist/ or the exported zip.
+  copyIfExists(resolve(SRC, 'shared/gunzip.js'), resolve(outDir, 'js/gunzip.js'));
+  rmSync(resolve(outDir, 'python'), { recursive: true, force: true });
+  copyIfExists(resolve(SRC, 'shared/python'), resolve(outDir, 'python'), {
+    filter: (source) => !source.split(sep).includes('__pycache__'),
+  });
+  // Mirror vendor/pyodide exactly except for source assets replaced by gzip.
+  // Clear first so files renamed or dropped cannot linger in dist or exports.
   rmSync(resolve(outDir, 'pyodide'), { recursive: true, force: true });
-  copyIfExists(resolve(ROOT, 'vendor/pyodide'), resolve(outDir, 'pyodide'));
+  copyIfExists(resolve(ROOT, 'vendor/pyodide'), resolve(outDir, 'pyodide'), {
+    filter: (source) => !['pyodide.asm.wasm', 'pyodide.asm.js', 'pyodide-lock.json']
+      .includes(basename(source)),
+  });
 }
 
 function copyBuilderStaticAssets() {
@@ -57,17 +64,18 @@ function writeBuilderRuntimeAssets() {
 
   const appBundleJs = readFileSync(previewBundlePath, 'utf8');
   const styleCss = readFileSync(previewStylePath, 'utf8');
-  // Keep in sync with scripts/build.js: the worker and the Python sources
-  // ride along so SCORM export also works from file://.
+  // Keep in sync with scripts/build.js: worker and Python sources support file:// exports.
   const workerJs = readFileSync(resolve(SRC, 'shared/python-worker.js'), 'utf8');
   const astmatchPy = readFileSync(resolve(SRC, 'shared/python/astmatch.py'), 'utf8');
   const harnessPy = readFileSync(resolve(SRC, 'shared/python/harness.py'), 'utf8');
+  const gunzipJs = readFileSync(resolve(SRC, 'shared/gunzip.js'), 'utf8');
   const script = `globalThis.__SCORM_BUILDER_ASSETS__ = ${JSON.stringify({
     appBundleJs,
     styleCss,
     workerJs,
     astmatchPy,
     harnessPy,
+    gunzipJs,
   })};\n`;
   writeFileSync(resolve(BUILDER_DIST, 'runtime-assets.js'), script);
 }
@@ -77,6 +85,7 @@ async function dev() {
   copyPreviewStyle();
   copyPythonRuntime(BUILDER_DIST);
   copyIfExists(resolve(SRC, 'shared/python-worker.js'), resolve(BUILDER_DIST, 'preview/python-worker.js'));
+  copyIfExists(resolve(SRC, 'shared/gunzip.js'), resolve(BUILDER_DIST, 'preview/gunzip.js'));
 
   const builderCtx = await esbuild.context({
     entryPoints: [resolve(SRC, 'activity-builder/js/builder-app.js')],
@@ -114,6 +123,7 @@ async function dev() {
   copyPreviewStyle();
   copyPythonRuntime(BUILDER_DIST);
   copyIfExists(resolve(SRC, 'shared/python-worker.js'), resolve(BUILDER_DIST, 'preview/python-worker.js'));
+  copyIfExists(resolve(SRC, 'shared/gunzip.js'), resolve(BUILDER_DIST, 'preview/gunzip.js'));
   writeBuilderRuntimeAssets();
 
   const { host, port } = await builderCtx.serve({

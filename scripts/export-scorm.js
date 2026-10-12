@@ -2,7 +2,7 @@
  * Zip dist/scorm-template/ into a Moodle-uploadable SCORM package.
  *
  * When the activity config sets `python_setup.pyodide_base_url`, the bundled
- * runtime is dropped from the zip (the LMS package stays ~1 MB and the runtime
+ * runtime is dropped from the zip (the LMS package stays ~0.2 MB and the runtime
  * is loaded from that URL instead); otherwise the runtime ships inside the zip
  * so offline LMS deployments work with zero configuration.
  */
@@ -41,7 +41,8 @@ async function exportScorm() {
   }
 
   const zip = new JSZip();
-  addDirectoryToZip(zip, DIST_SCORM, '', externalPyodide);
+  const includePillow = (config?.python_setup?.packages ?? []).includes('pillow');
+  addDirectoryToZip(zip, DIST_SCORM, '', externalPyodide, includePillow);
 
   const outputPath = resolve(OUTPUT, filename);
   const content = await zip.generateAsync({
@@ -61,7 +62,7 @@ async function exportScorm() {
   console.log(`   Size: ${sizeMb} MB`);
 }
 
-function addDirectoryToZip(zip, dirPath, zipPath, skipPyodide) {
+function addDirectoryToZip(zip, dirPath, zipPath, skipPyodide, includePillow) {
   const entries = readdirSync(dirPath);
   for (const entry of entries) {
     const fullPath = resolve(dirPath, entry);
@@ -69,9 +70,12 @@ function addDirectoryToZip(zip, dirPath, zipPath, skipPyodide) {
     if (skipPyodide && (entryZipPath === 'pyodide' || entryZipPath.startsWith('pyodide/'))) {
       continue;
     }
+    if (!includePillow && /^pyodide\/pillow-.*\.whl$/.test(entryZipPath)) {
+      continue;
+    }
     const stat = statSync(fullPath);
     if (stat.isDirectory()) {
-      addDirectoryToZip(zip, fullPath, entryZipPath, skipPyodide);
+      addDirectoryToZip(zip, fullPath, entryZipPath, skipPyodide, includePillow);
     } else {
       zip.file(entryZipPath, readFileSync(fullPath));
     }

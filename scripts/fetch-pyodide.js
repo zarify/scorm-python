@@ -9,6 +9,8 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'fs';
+import { gzipSync } from 'node:zlib';
+import JSZip from 'jszip';
 import { basename, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -18,6 +20,13 @@ const VENDOR_DIR = resolve(ROOT, 'vendor', 'pyodide');
 
 export const PYODIDE_VERSION = '314.0.7';
 export const CDN = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
+
+export const GZIP_ASSETS = ['pyodide.asm.wasm', 'pyodide.asm.js', 'pyodide-lock.json'];
+export const STDLIB_STRIP = [
+  'ctypes', 'doctest.py', 'imaplib.py', 'mailbox.py', 'multiprocessing', 'optparse.py',
+  'pdb.py', 'pickletools.py', 'poplib.py', 'pydoc.py', 'smtplib.py', 'tarfile.py',
+  'unittest', 'wsgiref', 'xmlrpc', '_pyrepl',
+];
 
 // Upstream ships its ESM entry points as `pyodide.mjs` / `pyodide.asm.mjs`,
 // but SCORM hosts (Moodle's pluginfile.php among them) serve unknown
@@ -74,6 +83,33 @@ function directoryTotals(dir) {
     if (statSync(path).isFile()) bytes += statSync(path).size;
   }
   return { count: names.length, bytes };
+}
+
+async function stripStdlibZip(dir) {
+  const path = resolve(dir, 'python_stdlib.zip');
+  const archive = await JSZip.loadAsync(readFileSync(path));
+  const matches = Object.keys(archive.files).filter((name) => {
+    const firstSegment = name.split('/')[0];
+    return STDLIB_STRIP.includes(firstSegment);
+  });
+  if (matches.length === 0) return;
+
+  for (const name of matches) archive.remove(name);
+  const stripped = await archive.generateAsync({
+    type: 'nodebuffer',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 9 },
+  });
+  writeFileSync(path, stripped);
+}
+
+export async function deriveRuntimeArtifacts(dir = VENDOR_DIR) {
+  for (const name of GZIP_ASSETS) {
+    const source = readFileSync(resolve(dir, name));
+    writeFileSync(resolve(dir, `${name}.gz`), gzipSync(source, { level: 9 }));
+  }
+  await stripStdlibZip(dir);
+  return directoryTotals(dir);
 }
 
 /**
@@ -177,6 +213,17 @@ export async function ensurePyodide() {
     missing.push('pyodide-lock.json — required to resolve optional package wheels');
   }
 
+  const canDerive = (isCached(resolve(VENDOR_DIR, 'pyodide.js'))
+    || isCached(resolve(VENDOR_DIR, 'pyodide.mjs')))
+    && isCached(resolve(VENDOR_DIR, 'pyodide.asm.wasm'))
+    && (isCached(resolve(VENDOR_DIR, 'pyodide.asm.js'))
+      || isCached(resolve(VENDOR_DIR, 'pyodide.asm.mjs')))
+    && isCached(resolve(VENDOR_DIR, 'pyodide-lock.json'))
+    && isCached(resolve(VENDOR_DIR, 'python_stdlib.zip'));
+  if (canDerive) {
+    normalizeVendorLayout();
+    await deriveRuntimeArtifacts();
+  }
   if (missing.length > 0) {
     const cachedCount = wanted
       .filter(({ upstream, shipped }) => isCached(resolve(VENDOR_DIR, shipped))
@@ -192,7 +239,6 @@ export async function ensurePyodide() {
     throw new Error(lines.join('\n'));
   }
 
-  normalizeVendorLayout();
 
   const totals = directoryTotals(VENDOR_DIR);
   if (!ensurePyodide.quiet) {
