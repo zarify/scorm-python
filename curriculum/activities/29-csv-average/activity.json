@@ -1,0 +1,115 @@
+{
+  "metadata": {
+    "activity_id": "29_csv_average",
+    "title": "Average a CSV Column",
+    "version": "1.0",
+    "description": "Read a seeded CSV with the csv module and write the column mean to a result CSV."
+  },
+  "instructions": {
+    "main": "`data.csv` lives in the workspace with a header row and a `score` column. Write `result.csv` containing a header `average` and one row holding the mean of the scores (7.0).",
+    "steps": [
+      "Import the module: `import csv`.",
+      "Read the data: `reader = csv.reader(f)`, skip the header with `next(reader)`, and collect `float(row[1])` for each row.",
+      "The mean is `sum(scores) / len(scores)` — divide by the number of data rows, not by every line in the file.",
+      "Write `result.csv` with `csv.writer(f)`: `writer.writerow([\"average\"])` then `writer.writerow([average])`."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [
+      {
+        "path": "data.csv",
+        "content": "name,score\nAda,5\nGrace,7\nLinus,8\nMargaret,8\n"
+      }
+    ],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "`import csv`, read `data.csv` skipping the header, compute `sum(scores) / len(scores)`, and write the result with `csv.writer`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-header",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "len\\(rows\\)" }
+      },
+      "message": "The header row is not a score — divide the total by the number of data rows (`len(scores)`), not by the number of lines in the file.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-average",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "max(_)" }
+      },
+      "message": "The task asks for the mean, not the highest score: total the scores and divide by how many there are — `sum(scores) / len(scores)`.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "result.csv holds the mean of the score column.",
+    "test_cases": [
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 30,
+        "feedback_on_pass": "The confirmation line prints exactly.",
+        "feedback_on_fail": "Print `Wrote result.csv` after writing the file.",
+        "output_assertion": {
+          "enabled": true,
+          "expected": "Wrote result.csv\n",
+          "match_mode": "exact"
+        }
+      },
+      {
+        "id": "test_file",
+        "type": "file_state",
+        "points": 70,
+        "path": "result.csv",
+        "exists": true,
+        "format": "csv",
+        "feedback_on_pass": "result.csv has the `average` header and the mean 7.0 as a float.",
+        "feedback_on_fail": "Write `result.csv` with an `average` header row and one data row holding the mean of the scores (7.0).",
+        "csv_assertions": {
+          "row_count": 2,
+          "row_count_comparison": "equals",
+          "header": ["average"],
+          "cells": [
+            {
+              "row": 1,
+              "column": 0,
+              "expected_value": 7.0,
+              "comparison": "equals",
+              "expected_type": "float"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

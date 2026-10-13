@@ -1,0 +1,132 @@
+{
+  "metadata": {
+    "activity_id": "18_linear_search",
+    "title": "Linear Search",
+    "version": "1.0",
+    "description": "Implement linear search that returns the match index or -1."
+  },
+  "instructions": {
+    "main": "Define `search(items, target)` that returns the index of the first element equal to `target`, or `-1` when it is not found.",
+    "steps": [
+      "Loop with `for i in range(len(items)):` and test `items[i] == target`.",
+      "On a match, `return i` — the position, not a boolean.",
+      "After the loop, `return -1` for 'not found'."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Define `def search(items, target):`, loop with `for i in range(len(items)):`, `return i` on a match, `return -1` otherwise.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-index",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "return True" }
+      },
+      "message": "Return the POSITION, not a boolean: `return i` gives the caller the index (1 for `search([1, 2, 3], 2)`); `True` only says 'found'.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-sentinel",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "return" }
+      },
+      "message": "A bare `return` hands back `None`. On a match write `return i`, and finish with `return -1` so 'not found' is a number, not None.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-after-fail",
+      "trigger": {
+        "event": "test_fail",
+        "after_attempts": 1
+      },
+      "message": "Check what each `return` actually sends back: `search([1, 2, 3], 2)` must be 1 and `search([], 1)` must be -1.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "Your search returns the matching index, or -1 when the target is absent.",
+    "test_cases": [
+      {
+        "id": "test_fn",
+        "type": "function_state",
+        "points": 60,
+        "function_name": "search",
+        "parameter_count_enabled": true,
+        "parameter_count": 2,
+        "feedback_on_pass": "`search([1, 2, 3], 2)` returns the index 1 and takes two parameters.",
+        "feedback_on_fail": "`search([1, 2, 3], 2)` must return the index `1` — not True, not None. Keep `return -1` for the not-found case.",
+        "return_assertion": {
+          "enabled": true,
+          "arguments": [[1, 2, 3], 2],
+          "expected_type": "int",
+          "value_assertion_enabled": true,
+          "expected_value": 1,
+          "comparison": "equals",
+          "show_expected": true,
+          "show_actual": true
+        }
+      },
+      {
+        "id": "test_sentinel",
+        "type": "function_state",
+        "points": 20,
+        "function_name": "search",
+        "feedback_on_pass": "`search([], 1)` returns the sentinel -1.",
+        "feedback_on_fail": "`search([], 1)` must return `-1` — the not-found sentinel for an empty list.",
+        "return_assertion": {
+          "enabled": true,
+          "arguments": [[], 1],
+          "expected_type": "int",
+          "value_assertion_enabled": true,
+          "expected_value": -1,
+          "comparison": "equals",
+          "show_expected": true,
+          "show_actual": true
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 20,
+        "feedback_on_pass": "You loop over the items with a for loop.",
+        "feedback_on_fail": "Search with a `for` loop: `for i in range(len(items)):`.",
+        "conditions": { "type": "ast_pattern", "pattern": "for _ in _:\n    ..." }
+      }
+    ]
+  }
+}

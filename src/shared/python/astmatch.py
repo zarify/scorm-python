@@ -29,11 +29,13 @@ Wildcards
 All other pattern nodes must match the same ``ast`` class with every child
 matched recursively. Ignored: ``lineno``/``col_offset``/``end_*`` attributes
 and ``ctx``. Constants compare with ``pattern.value == student.value`` and
-``type(pattern.value) is type(student.value)`` (so ``1`` does not match
-``1.0``). Function/class definition names accept ``_``/``_name`` wildcards in
-the name field, and a stub-style parameter list ``def name(...):`` matches any
-parameter list (rewritten to a sentinel before parsing — plain CPython rejects
-``...`` as a parameter list).
+``type(pattern.value) is type(student.value)`` (so ``1`` does not match ``1.0``).
+Identifier wildcards also apply to definition/class names, import alias names,
+argument names, and attribute names; ``Global.names`` and keyword argument
+names remain exact. In variant mode, an omitted import alias is unconstrained.
+Stub-style function parameters ``def name(...)`` match any parameters; a
+trailing ``...`` after leading positional parameters matches that named prefix
+and leaves the remaining signature unconstrained.
 
 Matching modes
 --------------
@@ -93,11 +95,11 @@ class PatternError(ValueError):
 
 _NAMED_WILDCARD_RE = re.compile(r"^_[A-Za-z0-9][A-Za-z0-9_]*$")
 _ANY_PARAMS_SENTINEL = "__scorm_any_params__"
-# Stub-style headers ("def name(...)") do not parse under exec-mode CPython;
-# rewrite them to a sentinel keyword-only-free parameter before ast.parse.
+# Stub-style headers ("def name(...)", "def name(arg, ...)") do not parse
+# under exec-mode CPython; rewrite the trailing ellipsis to a sentinel.
 _ANY_PARAMS_REWRITE_RE = re.compile(
     r"(?m)^([ \t]*(?:async[ \t]+)?def[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*\([ \t]*)"
-    r"\.\.\.([ \t]*\))"
+    r"([^\n]*,[ \t]*)?\.\.\.([ \t]*\))"
 )
 _SEQUENCE_FIELDS = ("body", "orelse", "finalbody")
 _REGEX_FLAG_CHARS = {"i": re.I, "m": re.M, "s": re.S}
@@ -119,7 +121,7 @@ def _parse_pattern(pattern_source):
     if not isinstance(pattern_source, str):
         raise PatternError("pattern must be a string")
     rewritten = _ANY_PARAMS_REWRITE_RE.sub(
-        r"\1" + _ANY_PARAMS_SENTINEL + r"\2", pattern_source
+        r"\1" + r"\2" + _ANY_PARAMS_SENTINEL + r"\3", pattern_source
     )
     try:
         tree = ast.parse(rewritten)
@@ -267,20 +269,46 @@ def _match_call(pat, stu, env, strict):
 
 
 def _is_any_params_pattern(node):
-    """True for the rewritten stub-style `def name(...)` parameter list."""
+    """True for a rewritten stub signature ending in the parameter sentinel."""
     if not isinstance(node, ast.arguments):
         return False
-    return (
-        not node.posonlyargs
-        and len(node.args) == 1
-        and node.args[0].arg == _ANY_PARAMS_SENTINEL
-        and node.vararg is None
-        and not node.kwonlyargs
-        and node.kwarg is None
-        and not node.defaults
-        and not node.kw_defaults
-    )
+    positional = [*node.posonlyargs, *node.args]
+    return bool(positional and positional[-1].arg == _ANY_PARAMS_SENTINEL)
 
+
+def _match_identifier(pattern_value, student_value, env):
+    """Match one identifier field, supporting bare and named wildcards."""
+    if not isinstance(pattern_value, str) or not isinstance(student_value, str):
+        return None
+    if pattern_value == "_":
+        return env
+    if _NAMED_WILDCARD_RE.match(pattern_value):
+        return _bind(pattern_value, student_value, env)
+    return env if pattern_value == student_value else None
+
+
+def _match_stub_parameters(pattern_args, student_args, env):
+    """Match the written positional prefix; the remaining signature is free."""
+    if not isinstance(student_args, ast.arguments):
+        return None
+    pattern_positional = [*pattern_args.posonlyargs, *pattern_args.args][:-1]
+    student_positional = [*student_args.posonlyargs, *student_args.args]
+    if len(student_positional) < len(pattern_positional):
+        return None
+    for pattern_arg, student_arg in zip(pattern_positional, student_positional):
+        env = _match_identifier(pattern_arg.arg, student_arg.arg, env)
+        if env is None:
+            return None
+    return env
+
+
+def _is_identifier_field(node, field):
+    return (
+        (isinstance(node, _DEFINITION_TYPES) and field == "name")
+        or (isinstance(node, ast.alias) and field in ("name", "asname"))
+        or (isinstance(node, ast.arg) and field == "arg")
+        or (isinstance(node, ast.Attribute) and field == "attr")
+    )
 
 def _match_fields(pat, stu, env, strict):
     for field in pat._fields:
@@ -289,21 +317,11 @@ def _match_fields(pat, stu, env, strict):
         pv = getattr(pat, field, None)
         sv = getattr(stu, field, None)
 
-        if (
-            field == "name"
-            and isinstance(pat, _DEFINITION_TYPES)
-            and isinstance(pv, str)
-        ):
-            if pv == "_":
+        if _is_identifier_field(pat, field):
+            if isinstance(pat, ast.alias) and field == "asname" and pv is None and not strict:
                 continue
-            if _NAMED_WILDCARD_RE.match(pv):
-                if not isinstance(sv, str):
-                    return None
-                bound = _bind(pv, sv, env)
-                if bound is None:
-                    return None
-                env = bound
-            elif pv != sv:
+            env = _match_identifier(pv, sv, env)
+            if env is None:
                 return None
             continue
 
@@ -312,7 +330,8 @@ def _match_fields(pat, stu, env, strict):
             and isinstance(pat, (ast.FunctionDef, ast.AsyncFunctionDef))
             and _is_any_params_pattern(pv)
         ):
-            if not isinstance(sv, ast.arguments):
+            env = _match_stub_parameters(pv, sv, env)
+            if env is None:
                 return None
             continue
 

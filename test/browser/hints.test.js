@@ -78,6 +78,11 @@ test('a regex hint ticks while the code is unparsed; the AST hint waits for a bo
     undefined,
     { timeout: 30_000 },
   );
+  await page.waitForFunction(
+    () => document.querySelectorAll('.hint-checklist-item').length === 2,
+    undefined,
+    { timeout: 20_000 },
+  );
 
   // Both checklist items exist and are unticked before any code is typed.
   const initial = await page.evaluate(

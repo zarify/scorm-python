@@ -38,9 +38,9 @@ suite, network for the first Pyodide fetch (cached in `vendor/pyodide/`).
 | `npm run build:builder` | Build only `dist/activity-builder/` |
 | `npm run export` | Zip `dist/scorm-template/` → `dist/<activity_id>.zip` |
 | `npm run dev` | Watch + serve the builder on port 3000 |
-| `npm test` | Node test suite (validator, normalizer, test-config, hint evaluator, codec, SCORM wrapper, inline markdown) |
+| `npm test` | Node suite for config, test runner, curriculum corpus, persistence, hints, and SCORM behavior |
 | `npm run test:python` | Python unittest suite for the AST matcher and execution harness (`test-py/`) |
-| `npm run test:browser` | Full build + 25 Playwright end-to-end scenarios (9 files) driving the real Pyodide runtime |
+| `npm run test:browser` | Full build + 37 Playwright end-to-end scenarios (11 files) driving the real Pyodide runtime |
 
 ## Workflow
 
@@ -141,7 +141,7 @@ Common test fields: `id`, `type`, `points` ≥ 0, `feedback_on_pass`, `feedback_
 | `stdout_match` | `output_assertion` `{enabled, expected, match_mode exact\|contains\|regex, show_expected, show_actual, success_message, failure_message}`, `prompt_assertion` (same + `match_any_item`), `prompt_inputs`, `strict_prompt_inputs`, `execution_context` `{scope main\|function, function_name, arguments}`, `setup_files` |
 | `code_structure` | `conditions` (one condition object; evaluated without executing) |
 | `variable_state` | `variable_name`, `expected_type` (`any\|int\|float\|bool\|string\|list\|tuple\|dict\|null`), value assertion (`comparison: equals\|gt\|lt\|gte\|lte\|contains`), `list_assertions` (length/values/item types/index checks), `prompt_inputs`, `strict_prompt_inputs`, `setup_files` |
-| `function_state` | `function_name`, `parameter_count` + `parameter_count_enabled`, `return_assertion` (arguments, expected type/value, list assertions, show flags, messages), `setup_files` |
+| `function_state` | `function_name`, `parameter_count` + `parameter_count_enabled`, `return_assertion` (positional `arguments`, optional exact `expected_error_type` **or** expected return type/value/list checks, show flags, messages), `setup_files` |
 | `file_state` | `path`, `exists` (default true), `format` (`text\|csv\|binary`), `content_assertion` (text), `csv_assertions` `{row_count, row_count_comparison, header, cells[{row, column, expected_value, comparison, expected_type}]}`, `prompt_inputs`, `strict_prompt_inputs`, `setup_files` |
 
 `setup_files` merge over `python_setup.files` per test (test entry wins on path

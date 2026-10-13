@@ -1,0 +1,101 @@
+{
+  "metadata": {
+    "activity_id": "02_personal_greeting",
+    "title": "Personal Greeting",
+    "version": "1.0",
+    "description": "Read a name with input() and greet the user with a string concatenation."
+  },
+  "instructions": {
+    "main": "Ask the user for their name, then greet them by printing `Hello, <name>!`.",
+    "steps": [
+      "Read the name with `input(\"What is your name?\")` — the prompt text must match exactly.",
+      "Build the greeting from the name: `Hello, ` + name + `!`.",
+      "Print the greeting on its own line."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Read the name with `name = input(\"What is your name?\")`, then print the greeting.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-hardcoded",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "['\"]Hello, Ada!['\"]" }
+      },
+      "message": "The name must come from the user — read it with `input(...)` instead of printing a fixed greeting.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-concat",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "\\+\\s*len\\s*\\(" }
+      },
+      "message": "`+` can only join strings. `len(name)` is a number — wrap it in `str(...)` or use an f-string instead.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "You asked for the name and greeted the user exactly.",
+    "test_cases": [
+      {
+        "id": "test_prompt",
+        "type": "stdout_match",
+        "points": 40,
+        "prompt_inputs": ["Ada"],
+        "strict_prompt_inputs": true,
+        "feedback_on_pass": "The prompt text matches.",
+        "feedback_on_fail": "Ask for the name with exactly `input(\"What is your name?\")`.",
+        "prompt_assertion": {
+          "enabled": true,
+          "expected": "What is your name?",
+          "match_mode": "exact"
+        }
+      },
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 60,
+        "prompt_inputs": ["Ada"],
+        "strict_prompt_inputs": true,
+        "feedback_on_pass": "The greeting matches exactly.",
+        "feedback_on_fail": "With the name Ada, print exactly `Hello, Ada!`.",
+        "output_assertion": {
+          "enabled": true,
+          "expected": "Hello, Ada!\n",
+          "match_mode": "exact"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "metadata": {
+    "activity_id": "04_temperature_converter",
+    "title": "Temperature Converter",
+    "version": "1.0",
+    "description": "Convert Celsius to Fahrenheit with F = C * 9 / 5 + 32 and print one decimal place."
+  },
+  "instructions": {
+    "main": "Convert 36.6 degrees Celsius to Fahrenheit using `F = C * 9 / 5 + 32` and print the result with 1 decimal place.",
+    "steps": [
+      "Set `celsius = 36.6` (keep it as a float — do not convert it with `int()`).",
+      "Compute `fahrenheit = celsius * 9 / 5 + 32`.",
+      "Print `F: <value>` with exactly 1 decimal place using `\"{:.1f}\".format(...)`."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Set `celsius = 36.6`, compute `fahrenheit = celsius * 9 / 5 + 32`, then print with `\"F: {:.1f}\".format(fahrenheit)`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-int",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "\\bint\\s*\\(" }
+      },
+      "message": "`int(...)` truncates the decimal part — keep the temperature as a float and round only when printing with `{:.1f}`.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-order",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "\\+\\s*32\\s*\\*" }
+      },
+      "message": "Follow the formula order: `celsius * 9 / 5` first, then `+ 32` — multiplication and division happen before addition.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "The conversion keeps the float precision and prints 1 decimal place.",
+    "test_cases": [
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 60,
+        "feedback_on_pass": "The Fahrenheit value prints with one decimal place.",
+        "feedback_on_fail": "Print exactly `F: 97.9` for 36.6 degrees Celsius.",
+        "output_assertion": {
+          "enabled": true,
+          "expected": "^F: 97\\.9\\n$",
+          "match_mode": "regex"
+        }
+      },
+      {
+        "id": "test_temp",
+        "type": "variable_state",
+        "points": 40,
+        "variable_name": "fahrenheit",
+        "expected_type": "float",
+        "value_assertion_enabled": false,
+        "feedback_on_pass": "`fahrenheit` holds a float.",
+        "feedback_on_fail": "Store the result in a variable named `fahrenheit` and keep it a float (do not truncate with `int()`)."
+      }
+    ]
+  }
+}

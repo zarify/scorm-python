@@ -1,0 +1,114 @@
+{
+  "metadata": {
+    "activity_id": "03_arithmetic_bill",
+    "title": "Arithmetic Bill",
+    "version": "1.0",
+    "description": "Compute a purchase total and its 10% GST in whole cents, printing both as dollars with 2 decimals."
+  },
+  "instructions": {
+    "main": "An item costs 4999 cents ($49.99) and the customer buys 3. Compute the total, then the 10% GST, and print both as dollar amounts rounded to 2 decimals.",
+    "steps": [
+      "Work in whole cents: `total_cents = price_cents * qty`.",
+      "The 10% GST in whole cents is `gst_cents = total_cents // 10` (floor division keeps money as whole cents).",
+      "Convert to dollars when printing: `Total: <value>` then `GST: <value>`, each on its own line with exactly 2 decimals (use `\"{:.2f}\".format(...)`)."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Set `price_cents = 4999` and `qty = 3`, compute `total_cents = price_cents * qty` and `gst_cents = total_cents // 10`, then print both in dollars with `{:.2f}`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-div",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "source_regex",
+          "pattern": "total_cents\\s*/\\s*10\\s*$",
+          "regex_flags": "m"
+        }
+      },
+      "message": "The GST must stay whole cents: `total_cents / 10` keeps a fraction of a cent — use floor division `total_cents // 10`.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-round",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "str\\s*\\(" }
+      },
+      "message": "Print money with rounding: `\"{:.2f}\".format(value)` rounds to 2 decimals, but `str()` prints every digit.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-check",
+      "trigger": {
+        "event": "test_fail",
+        "after_attempts": 1
+      },
+      "message": "Your last run didn't pass — check that the total and the GST are each printed on their own line with exactly two decimals.",
+      "display_mode": "triggered",
+      "priority": 3,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "The total and GST are computed in cents and printed with 2 decimals.",
+    "test_cases": [
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 60,
+        "feedback_on_pass": "Both amounts print with exactly two decimals.",
+        "feedback_on_fail": "Print the total as `Total: 149.97` and the GST as `GST: 14.99`, each on its own line with exactly two decimals.",
+        "output_assertion": {
+          "enabled": true,
+          "expected": "^Total: 149\\.97\\nGST: 14\\.99\\n$",
+          "match_mode": "regex"
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 40,
+        "feedback_on_pass": "You computed a product into a variable.",
+        "feedback_on_fail": "Compute the total as a product: `total_cents = price_cents * qty`.",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "_ = _ * _",
+          "min_count": 1
+        }
+      }
+    ]
+  }
+}

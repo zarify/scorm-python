@@ -1,0 +1,80 @@
+{
+  "metadata": {
+    "activity_id": "19_frequency_count",
+    "title": "Word Frequency Count",
+    "version": "1.0",
+    "description": "Tally word occurrences into a dictionary with a loop."
+  },
+  "instructions": {
+    "main": "Given `words = [\"apple\", \"banana\", \"apple\", \"cherry\", \"banana\", \"apple\"]`, count how often each word occurs in a dictionary named `counts`.",
+    "steps": [
+      "Start with an empty dictionary: `counts = {}`.",
+      "Loop over `words`; for each word add 1 to its count.",
+      "The finished `counts` must be {\"apple\": 3, \"banana\": 2, \"cherry\": 1}."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Start with `counts = {}`, loop over `words`, and bump each word's count by 1.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-get",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "_x[_] = _x[_] + _" }
+      },
+      "message": "`counts[word]` reads the stored value — on the first sighting the key isn't there yet, so `counts[word] + 1` raises KeyError. Use `counts[word] = counts.get(word, 0) + 1` so missing keys start at 0.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "Your dictionary counts every word correctly.",
+    "test_cases": [
+      {
+        "id": "test_state",
+        "type": "variable_state",
+        "points": 60,
+        "feedback_on_pass": "counts holds apple 3, banana 2, cherry 1.",
+        "feedback_on_fail": "After running, `counts` must be {\"apple\": 3, \"banana\": 2, \"cherry\": 1} — every word's count has to land in the dictionary without raising KeyError.",
+        "variable_name": "counts",
+        "expected_type": "dict",
+        "value_assertion_enabled": true,
+        "expected_value": { "apple": 3, "banana": 2, "cherry": 1 },
+        "comparison": "equals"
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 40,
+        "feedback_on_pass": "You insert each count with an assignment like counts[word] = ...",
+        "feedback_on_fail": "Store each count with a key assignment: `counts[word] = ...`.",
+        "conditions": { "type": "ast_pattern", "pattern": "_x[_] = _" }
+      }
+    ]
+  }
+}

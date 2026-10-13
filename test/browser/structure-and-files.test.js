@@ -128,7 +128,7 @@ test('a wrong result.csv fails with the csv cell detail', async (t) => {
 
   assert.match(results, /Some automated checks failed/);
   assert.match(results, /Write the average to result\.csv/, 'the configured feedback shows');
-  assert.match(results, /Expected cell \[0\]\[0\] equals "7"/, 'the cell detail is student-visible');
+  assert.match(results, /Expected cell \[0\]\[0\] equals 7/, 'the cell detail is student-visible');
   assert.match(results, /got "8"/);
   assert.deepEqual(errors, []);
 });

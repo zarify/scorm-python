@@ -1,0 +1,86 @@
+{
+  "metadata": {
+    "activity_id": "26_string_methods",
+    "title": "Normalise a String with Strip, Lower, and Split",
+    "version": "1.0",
+    "description": "Clean up a messy string by trimming, lowercasing, and splitting it on spaces."
+  },
+  "instructions": {
+    "main": "Normalise `text = \"  Ada LOVELACE  \"` to `\"ada lovelace\"`: strip the outer spaces, lowercase it, split on single spaces, and print the words joined by single spaces.",
+    "steps": [
+      "Strip the outer whitespace with `text.strip()`.",
+      "Lowercase with `.lower()`, then split on the space character: `.split(\" \")`.",
+      "Join with a single space and print the result."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Start with `text.strip().lower()`, then `.split(\" \")` and join with a space before printing.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-split",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "_.split(\"\")" }
+      },
+      "message": "`split(\"\")` is not allowed — an empty separator raises ValueError. Use `.split(\" \")` to split on spaces (or `.split()` with no arguments).",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "You trimmed, lowercased, and split the string correctly.",
+    "test_cases": [
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 60,
+        "feedback_on_pass": "The output is exactly \"ada lovelace\".",
+        "feedback_on_fail": "Print exactly `ada lovelace` — strip the outer spaces first, then lowercase and split on single spaces.",
+        "output_assertion": {
+          "enabled": true,
+          "expected": "ada lovelace\n",
+          "match_mode": "exact"
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 40,
+        "feedback_on_pass": "You used strip() and split().",
+        "feedback_on_fail": "Use `.strip()` to remove the outer spaces and `.split(\" \")` to split the words.",
+        "conditions": {
+          "type": "all",
+          "conditions": [
+            { "type": "ast_pattern", "pattern": "_.strip()" },
+            { "type": "ast_pattern", "pattern": "_.split(_)" }
+          ]
+        }
+      }
+    ]
+  }
+}

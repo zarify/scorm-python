@@ -1,0 +1,106 @@
+{
+  "metadata": {
+    "activity_id": "27_read_text_file",
+    "title": "Read a Text File",
+    "version": "1.0",
+    "description": "Read a seeded text file with a with-block and print its line count."
+  },
+  "instructions": {
+    "main": "`names.txt` lives in the workspace. Read it and print how many lines it contains.",
+    "steps": [
+      "Open the file from the workspace: `with open(\"names.txt\") as f:`.",
+      "Read the lines, e.g. `lines = f.read().splitlines()`.",
+      "Print the count with `print(len(lines))` — for the seeded file the answer is `4`."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [
+      {
+        "path": "names.txt",
+        "content": "Ada\nGrace\nLinus\nMargaret\n"
+      }
+    ],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Open `names.txt` with `with open(\"names.txt\") as f:`, read its lines, then `print(len(lines))`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-with",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "none",
+          "conditions": [
+            { "type": "ast_pattern", "pattern": "with open(_) as _:\n    ..." }
+          ]
+        }
+      },
+      "message": "Open files with `with open(\"names.txt\") as f:` — a `with` block closes the file for you; a bare `open(...)` relies on garbage collection and can leak the handle.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-path",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "open\\s*\\(\\s*[\"']/" }
+      },
+      "message": "Don't hardcode an absolute path — the file is right there in the workspace as `names.txt`. Use `open(\"names.txt\")`.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "You read names.txt with a with-block and printed its line count.",
+    "test_cases": [
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 60,
+        "feedback_on_pass": "The line count prints exactly.",
+        "feedback_on_fail": "Read all of `names.txt` and print the number of lines — for the seeded file it is `4`.",
+        "output_assertion": {
+          "enabled": true,
+          "expected": "4\n",
+          "match_mode": "exact"
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 40,
+        "feedback_on_pass": "You opened the file with a with-block.",
+        "feedback_on_fail": "Open the file with `with open(\"names.txt\") as f:` — the with-statement closes the file automatically.",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "with open(_) as _:\n    ..."
+        }
+      }
+    ]
+  }
+}

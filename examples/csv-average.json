@@ -120,7 +120,7 @@
           "row_count": 1,
           "row_count_comparison": "equals",
           "cells": [
-            { "row": 0, "column": 0, "expected_value": "7", "comparison": "equals", "expected_type": "int" }
+            { "row": 0, "column": 0, "expected_value": 7, "comparison": "equals", "expected_type": "int" }
           ]
         },
         "prompt_inputs": [],

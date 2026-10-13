@@ -331,6 +331,7 @@ export function getFunctionReturnAssertion(testCase) {
   const source = isObjectLike(testCase?.return_assertion) ? testCase.return_assertion : {};
   const hasAssertionFields = source.expected_value !== undefined
     || source.expected_type !== undefined
+    || source.expected_error_type !== undefined
     || source.comparison !== undefined
     || source.show_coerced_value_hint !== undefined
     || source.show_expected !== undefined
@@ -350,6 +351,9 @@ export function getFunctionReturnAssertion(testCase) {
     expected_type: normalizeVariableType(source.expected_type),
     value_assertion_enabled: normalizeVariableValueAssertionEnabled(source),
     ...(source.expected_value !== undefined ? { expected_value: source.expected_value } : {}),
+    ...(source.expected_error_type !== undefined
+      ? { expected_error_type: String(source.expected_error_type).trim() }
+      : {}),
     comparison: normalizeVariableValueComparison(source.comparison),
     show_coerced_value_hint: source.show_coerced_value_hint !== undefined
       ? Boolean(source.show_coerced_value_hint)

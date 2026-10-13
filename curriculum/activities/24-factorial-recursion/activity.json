@@ -1,0 +1,114 @@
+{
+  "metadata": {
+    "activity_id": "24_factorial_recursion",
+    "title": "Recursive Factorial",
+    "version": "1.0",
+    "description": "Compute factorial with a function that calls itself, with a correct base case."
+  },
+  "instructions": {
+    "main": "Define a recursive `factorial(n)` — `factorial(0)` is `1` and `factorial(n)` is `n * factorial(n - 1)`.",
+    "steps": [
+      "Define `def factorial(n):`.",
+      "Base case first: when `n <= 1`, `return 1`.",
+      "Otherwise `return n * factorial(n - 1)` — the function calls itself."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Define `def factorial(n):` with a base case `if n <= 1: return 1` and `return n * factorial(n - 1)`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-recursion",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "for _ in range(...):\n    ..." }
+      },
+      "message": "This task requires recursion, not a loop — have `factorial` call itself: `return n * factorial(n - 1)`.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-base",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "return 0" }
+      },
+      "message": "The base case must return `1`, not `0` — 0! is defined as 1, and returning 0 zeroes out every result.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-after-fail",
+      "trigger": {
+        "event": "test_fail",
+        "after_attempts": 1
+      },
+      "message": "Check the base case (`factorial(0)` must be 1) and make sure the recursive call is `factorial(n - 1)` so it reaches the base case.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "`factorial` recurses to the base case and returns 120 for 5.",
+    "test_cases": [
+      {
+        "id": "test_fn",
+        "type": "function_state",
+        "points": 60,
+        "function_name": "factorial",
+        "parameter_count_enabled": true,
+        "parameter_count": 1,
+        "feedback_on_pass": "`factorial(5)` returns 120.",
+        "feedback_on_fail": "`factorial(5)` must return `120` — check the base case (`return 1`) and the recursive step (`n * factorial(n - 1)`).",
+        "return_assertion": {
+          "enabled": true,
+          "arguments": [5],
+          "expected_type": "int",
+          "value_assertion_enabled": true,
+          "expected_value": 120,
+          "comparison": "equals",
+          "show_expected": true,
+          "show_actual": true
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 40,
+        "feedback_on_pass": "`factorial` calls itself.",
+        "feedback_on_fail": "Recursion means the function calls ITSELF — put `factorial(n - 1)` inside `factorial`, not a loop.",
+        "conditions": { "type": "ast_pattern", "pattern": "factorial(...)" }
+      }
+    ]
+  }
+}

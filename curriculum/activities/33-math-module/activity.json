@@ -1,0 +1,110 @@
+{
+  "metadata": {
+    "activity_id": "33_math_module",
+    "title": "Hypotenuse with math",
+    "version": "1.0",
+    "description": "Import the math module and use math.sqrt to print a hypotenuse to two decimals."
+  },
+  "instructions": {
+    "main": "Given legs `a = 3` and `b = 4`, print the hypotenuse to 2 decimal places using `math.sqrt`.",
+    "steps": [
+      "Import the module: `import math`.",
+      "Compute `hypotenuse = math.sqrt(a ** 2 + b ** 2)`.",
+      "Print it with `print(f\"{hypotenuse:.2f}\")` — for legs 3 and 4 the output is `5.00`."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Start with `import math`, then `hypotenuse = math.sqrt(a ** 2 + b ** 2)`, then print it with `:.2f`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-sqrt",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "\\*\\*\\s*0\\.5" }
+      },
+      "message": "`** 0.5` happens to compute a square root, but this task requires `math.sqrt(...)` — the standard library function is what every other Python programmer expects to see.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-import",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "all",
+          "conditions": [
+            { "type": "source_regex", "pattern": "math\\.sqrt\\s*\\(" },
+            {
+              "type": "none",
+              "conditions": [
+                { "type": "ast_pattern", "pattern": "import math" }
+              ]
+            }
+          ]
+        }
+      },
+      "message": "`math.sqrt(...)` needs the module name `math` itself — `from math import sqrt` only imports the bare function, so `math` is undefined. Add `import math` at the top (or call `sqrt(...)` directly).",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "You imported the math module and printed the hypotenuse with exactly two decimals.",
+    "test_cases": [
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 60,
+        "feedback_on_pass": "The output matches exactly.",
+        "feedback_on_fail": "Print the hypotenuse of legs 3 and 4 to exactly 2 decimal places: `5.00`.",
+        "output_assertion": {
+          "enabled": true,
+          "expected": "5.00\n",
+          "match_mode": "exact"
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 40,
+        "feedback_on_pass": "You imported the math module.",
+        "feedback_on_fail": "Import the module first: `import math` (or `from math import sqrt`).",
+        "conditions": {
+          "type": "any",
+          "conditions": [
+            { "type": "ast_pattern", "pattern": "import math" },
+            { "type": "ast_pattern", "pattern": "from math import _" }
+          ]
+        }
+      }
+    ]
+  }
+}

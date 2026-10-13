@@ -1,0 +1,111 @@
+{
+  "metadata": {
+    "activity_id": "14_list_comprehension",
+    "title": "Squares with a List Comprehension",
+    "version": "1.0",
+    "description": "Build the list of squares of 0..n-1 in one expression using a list comprehension."
+  },
+  "instructions": {
+    "main": "Set `n = 5` and build `squares` — the squares of 0, 1, 2, 3, 4 — using a list comprehension (no loop, no append).",
+    "steps": [
+      "Write `squares = [i * i for i in range(n)]`.",
+      "The comprehension alone must produce the whole list."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Start with `squares = [i * i for i in range(n)]`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-comprehension",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "\\.append\\s*\\(" }
+      },
+      "message": "The task asks for a list comprehension — build the whole list in one expression instead of appending in a loop.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-no-append",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "none",
+          "conditions": [{ "type": "source_regex", "pattern": "\\.append\\s*\\(" }]
+        },
+        "invalidate_on_condition_false": true
+      },
+      "message": "No `.append()` — the comprehension expression alone must produce the list.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-manual-comprehension",
+      "trigger": { "event": "manual" },
+      "message": "A list comprehension combines the output expression and the `for` clause in one list expression.",
+      "display_mode": "triggered",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "Your list comprehension produces exactly the squares of 0..n-1.",
+    "test_cases": [
+      {
+        "id": "test_state",
+        "type": "variable_state",
+        "points": 60,
+        "feedback_on_pass": "squares holds [0, 1, 4, 9, 16].",
+        "feedback_on_fail": "After running, `squares` should be [0, 1, 4, 9, 16].",
+        "variable_name": "squares",
+        "expected_type": "list",
+        "list_assertions": {
+          "length_enabled": true,
+          "length_value": 5,
+          "length_comparison": "equals",
+          "values_enabled": true,
+          "values_match_mode": "exact_order",
+          "expected_values": [0, 1, 4, 9, 16]
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 40,
+        "feedback_on_pass": "You used a list comprehension.",
+        "feedback_on_fail": "Build the list with a comprehension: `[expr for i in range(n)]`.",
+        "conditions": { "type": "ast_pattern", "pattern": "[_ for _ in _]" }
+      }
+    ]
+  }
+}

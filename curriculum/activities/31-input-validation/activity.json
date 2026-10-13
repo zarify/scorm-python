@@ -1,0 +1,126 @@
+{
+  "metadata": {
+    "activity_id": "31_input_validation",
+    "title": "Validate Integer Input",
+    "version": "1.0",
+    "description": "Read an integer with input(), catching ValueError and retrying until the input is valid."
+  },
+  "instructions": {
+    "main": "Ask `Enter a number: ` and read an integer. If the answer is not a number, print `That was not a number. Try again.` and ask again. When a valid number arrives, print `You entered:` and the number.",
+    "steps": [
+      "Loop with `while True:` so you can ask again after bad input.",
+      "Inside the loop, convert with `n = int(input(\"Enter a number: \"))` inside a `try:` block.",
+      "Catch the specific error with `except ValueError:` — print the message and loop again; on success `break` out.",
+      "After the loop, `print(\"You entered:\", n)`."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Wrap `int(input(\"Enter a number: \"))` in `try:`/`except ValueError:` inside a `while True:` loop, then print the number.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-valueerror",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "try:\n    ...\nexcept:\n    ..."
+        }
+      },
+      "message": "Catch the specific error, not everything: use `except ValueError:` — a bare `except:` also swallows typos and Ctrl-C and hides real bugs.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-retry",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "none",
+          "conditions": [
+            { "type": "ast_pattern", "pattern": "while _:\n    ..." }
+          ]
+        }
+      },
+      "message": "One attempt is not enough — put the `try`/`except` inside a `while True:` loop so bad input asks again instead of ending the program.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-after-fail",
+      "trigger": {
+        "event": "test_fail",
+        "after_attempts": 1
+      },
+      "message": "Check the flow: bad input prints `That was not a number. Try again.` and asks again; good input prints `You entered:` and the number.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "You retry on bad input and accept a valid integer.",
+    "test_cases": [
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 60,
+        "prompt_inputs": ["abc", "42"],
+        "strict_prompt_inputs": true,
+        "feedback_on_pass": "The retry message and the accepted number both appear.",
+        "feedback_on_fail": "For the answers `abc` then `42`: print `That was not a number. Try again.`, ask again, then print `You entered: 42`.",
+        "prompt_assertion": {
+          "enabled": true,
+          "expected": "Enter a number: ",
+          "match_mode": "exact",
+          "match_any_item": true
+        },
+        "output_assertion": {
+          "enabled": true,
+          "expected": "That was not a number. Try again.\nYou entered: 42\n",
+          "match_mode": "exact"
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 40,
+        "feedback_on_pass": "You catch ValueError specifically.",
+        "feedback_on_fail": "Use a `try:` block with `except ValueError:` — not a bare `except:`.",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "try:\n    ...\nexcept ValueError:\n    ..."
+        }
+      }
+    ]
+  }
+}

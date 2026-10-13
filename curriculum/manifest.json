@@ -1,0 +1,626 @@
+{
+  "version": 1,
+  "purpose": "An author-ready curriculum content corpus covering Python intro-CS concepts through tested reference programs and controlled misconception programs; it is content rather than a build-test fixture.",
+  "usage": "Import an activity.json through the Activity Builder JSON workflow, inspect it in Preview, and export SCORM from the builder header; see ../README.md#workflow.",
+  "audiences": {
+    "wa-high-school": "Western Australian senior secondary Computer Science ATAR (AECSC), mapped at concept level.",
+    "first-year-university": "Introductory university CS1 programming courses."
+  },
+  "curriculum_mapping_note": "WA audience alignment is concept-level to the SCSA Computer Science ATAR (AECSC); unit-level syllabus outcomes are not reproduced.",
+  "families": {
+    "A": {
+      "label": "Foundations, I/O, types, operators",
+      "activities": ["01-hello-output", "02-personal-greeting", "03-arithmetic-bill", "04-temperature-converter", "05-area-of-rectangle", "06-grade-classifier", "07-odd-even"]
+    },
+    "B": {
+      "label": "Iteration",
+      "activities": ["08-countdown-while", "09-multiplication-table", "10-sum-1-to-n", "11-nested-loop-grid", "12-break-first-match", "13-fizzbuzz", "14-list-comprehension"]
+    },
+    "C": {
+      "label": "Collections and data structures",
+      "activities": ["15-list-basics", "16-list-stats", "17-sorting", "18-linear-search", "19-frequency-count", "20-json-config"]
+    },
+    "D": {
+      "label": "Functions, recursion, and strings",
+      "activities": ["21-tuple-multiple-return", "22-function-defaults", "23-pure-vs-printing", "24-factorial-recursion", "25-lambda-sort-key", "26-string-methods"]
+    },
+    "E": {
+      "label": "Files, data, and errors",
+      "activities": ["27-read-text-file", "28-write-report", "29-csv-average", "30-csv-filter", "31-input-validation", "32-raise-error"]
+    },
+    "F": {
+      "label": "Modules and object-oriented programming",
+      "activities": ["33-math-module", "34-random-dice", "35-class-definition", "36-modular-program"]
+    }
+  },
+  "concepts": {
+    "io.print": { "label": "Output with print", "audiences": ["wa-high-school", "first-year-university"] },
+    "string.literals": { "label": "String literals and exact text", "audiences": ["wa-high-school", "first-year-university"] },
+    "io.input": { "label": "Input prompts and user responses", "audiences": ["wa-high-school", "first-year-university"] },
+    "string.concat": { "label": "String concatenation", "audiences": ["wa-high-school", "first-year-university"] },
+    "string.formatting": { "label": "Formatting values as text", "audiences": ["wa-high-school", "first-year-university"] },
+    "operators.arithmetic": { "label": "Arithmetic operators and expressions", "audiences": ["wa-high-school", "first-year-university"] },
+    "types.numeric": { "label": "Integer and floating-point values", "audiences": ["wa-high-school", "first-year-university"] },
+    "types.conversion": { "label": "Explicit numeric conversion", "audiences": ["wa-high-school", "first-year-university"] },
+    "function.define-call": { "label": "Function definitions and calls", "audiences": ["wa-high-school", "first-year-university"] },
+    "function.return": { "label": "Returning values from functions", "audiences": ["wa-high-school", "first-year-university"] },
+    "function.parameters": { "label": "Function parameters and arity", "audiences": ["wa-high-school", "first-year-university"] },
+    "control.ifelse": { "label": "Conditional branching", "audiences": ["wa-high-school", "first-year-university"] },
+    "control.elif": { "label": "Ordered multi-branch conditionals", "audiences": ["wa-high-school", "first-year-university"] },
+    "operators.comparison": { "label": "Comparison operators and boundary conditions", "audiences": ["wa-high-school", "first-year-university"] },
+    "types.bool": { "label": "Boolean values and predicates", "audiences": ["wa-high-school", "first-year-university"] },
+    "control.if": { "label": "Conditional execution", "audiences": ["wa-high-school", "first-year-university"] },
+    "loop.while": { "label": "Condition-controlled while loops", "audiences": ["wa-high-school", "first-year-university"] },
+    "loop.control": { "label": "Loop termination and control flow", "audiences": ["wa-high-school", "first-year-university"] },
+    "loop.for-range": { "label": "Count-controlled range loops", "audiences": ["wa-high-school", "first-year-university"] },
+    "loop.nested": { "label": "Nested iteration", "audiences": ["wa-high-school", "first-year-university"] },
+    "loop.accumulator": { "label": "Loop-based accumulation", "audiences": ["wa-high-school", "first-year-university"] },
+    "list.iterate": { "label": "Iterating through a list", "audiences": ["wa-high-school", "first-year-university"] },
+    "comprehension.list": { "label": "List comprehensions", "audiences": ["wa-high-school", "first-year-university"] },
+    "list.create": { "label": "Creating lists", "audiences": ["wa-high-school", "first-year-university"] },
+    "list.mutate": { "label": "Mutating list elements", "audiences": ["wa-high-school", "first-year-university"] },
+    "list.index-slice": { "label": "List indexing and slicing", "audiences": ["wa-high-school", "first-year-university"] },
+    "list.builtin": { "label": "Built-in collection and numeric functions", "audiences": ["wa-high-school", "first-year-university"] },
+    "module.statistics": { "label": "Statistics module functions", "audiences": ["wa-high-school", "first-year-university"] },
+    "list.sort": { "label": "Sorting lists and values", "audiences": ["wa-high-school", "first-year-university"] },
+    "function.lambda": { "label": "Lambda expressions as callbacks", "audiences": ["wa-high-school", "first-year-university"] },
+    "algorithm.sort": { "label": "Sorting algorithms and ordering", "audiences": ["wa-high-school", "first-year-university"] },
+    "algorithm.search": { "label": "Linear search", "audiences": ["wa-high-school", "first-year-university"] },
+    "loop.for-iterable": { "label": "Iteration over iterables", "audiences": ["wa-high-school", "first-year-university"] },
+    "dict.create": { "label": "Creating dictionaries", "audiences": ["wa-high-school", "first-year-university"] },
+    "dict.mutate": { "label": "Updating dictionary values", "audiences": ["wa-high-school", "first-year-university"] },
+    "module.json": { "label": "JSON data encoding and parsing", "audiences": ["wa-high-school", "first-year-university"] },
+    "dict.lookup": { "label": "Dictionary key lookup", "audiences": ["wa-high-school", "first-year-university"] },
+    "file.read": { "label": "Reading text and structured data files", "audiences": ["wa-high-school", "first-year-university"] },
+    "tuple.create": { "label": "Creating tuple values", "audiences": ["wa-high-school", "first-year-university"] },
+    "function.multiple-return": { "label": "Returning multiple values", "audiences": ["wa-high-school", "first-year-university"] },
+    "function.scope": { "label": "Function scope and pure functions", "audiences": ["wa-high-school", "first-year-university"] },
+    "function.recursion": { "label": "Recursive function definitions", "audiences": ["wa-high-school", "first-year-university"] },
+    "string.methods": { "label": "String methods", "audiences": ["wa-high-school", "first-year-university"] },
+    "string.operations": { "label": "String operations and normalization", "audiences": ["wa-high-school", "first-year-university"] },
+    "file.with": { "label": "Context-managed file access", "audiences": ["wa-high-school", "first-year-university"] },
+    "data.parsing": { "label": "Parsing structured input data", "audiences": ["wa-high-school", "first-year-university"] },
+    "file.write": { "label": "Writing text files", "audiences": ["wa-high-school", "first-year-university"] },
+    "file.csv-read": { "label": "Reading CSV files", "audiences": ["wa-high-school", "first-year-university"] },
+    "file.csv-write": { "label": "Writing CSV files", "audiences": ["wa-high-school", "first-year-university"] },
+    "error.try-except": { "label": "Handling exceptions with try/except", "audiences": ["wa-high-school", "first-year-university"] },
+    "error.specific-exception": { "label": "Catching and raising specific exceptions", "audiences": ["wa-high-school", "first-year-university"] },
+    "data.validation": { "label": "Validating user input", "audiences": ["wa-high-school", "first-year-university"] },
+    "error.raise": { "label": "Raising exceptions", "audiences": ["wa-high-school", "first-year-university"] },
+    "module.import": { "label": "Importing Python modules", "audiences": ["wa-high-school", "first-year-university"] },
+    "module.math": { "label": "Mathematical library functions", "audiences": ["wa-high-school", "first-year-university"] },
+    "module.random": { "label": "Random number generation", "audiences": ["wa-high-school", "first-year-university"] },
+    "algorithm.frequency": { "label": "Frequency analysis", "audiences": ["wa-high-school", "first-year-university"] },
+    "class.define": { "label": "Class definitions", "audiences": ["wa-high-school", "first-year-university"] },
+    "class.init": { "label": "Object initialization with __init__", "audiences": ["wa-high-school", "first-year-university"] },
+    "class.methods": { "label": "Defining and calling methods", "audiences": ["wa-high-school", "first-year-university"] },
+    "module.student": { "label": "Importing a student-authored module", "audiences": ["wa-high-school", "first-year-university"] }
+  },
+  "caveats": {
+    "caveat.prompts-not-in-output": "input() prompts are recorded in the prompt log and console stream, never in the stdout transcript checked by output_assertion.",
+    "caveat.function-calls-positional-only": "function_state return_assertion.arguments call the target function positionally; keyword-argument calls are not supported.",
+    "caveat.equals-python-types": "equals is type-aware: bool does not equal int, integers and floats compare numerically, sequences compare positionally, and dictionaries require identical key sets with recursively equal values.",
+    "caveat.csv-boolean-spellings": "CSV boolean cells accept only True, False, true, or false. Other spellings, including TRUE, 1, and yes, are strings and do not satisfy a bool type assertion.",
+    "caveat.binary-exists-only": "file_state format binary can assert file existence only; content and byte-level comparisons are not exposed.",
+    "caveat.stdlib-omissions": "The bundled stdlib omits ctypes, doctest, imaplib, mailbox, multiprocessing, optparse, pdb, pickletools, poplib, pydoc, smtplib, tarfile, unittest, wsgiref, xmlrpc, and _pyrepl (ImportError). asyncio and concurrent remain available.",
+    "caveat.forbidden-imports": "Imports of pyodide, js, _pyodide_base, pyodide_http, socket, ssl, urllib, http, requests, httpx, aiohttp, subprocess, multiprocessing, ctypes, and webbrowser are rejected by the harness.",
+    "caveat.watchdog-budgets": "Python soft budgets are 3 seconds in Check and 15 seconds in Run; JavaScript deadlines are 5 seconds in Check and 20 seconds of silence in Run. The recursion limit is 500.",
+    "caveat.value-and-workspace-caps": "Captured strings and file text are capped at 100,000 characters; captured lists, tuples, and dictionaries at 1,000 items; fallback repr at 500 characters; workspace snapshots at 100 files; output at 1,000,000 characters.",
+    "caveat.random-seed": "The random seed is deterministic for an identical source and input list, but code or prompt edits change the seed; avoid asserting exact random output across source variants.",
+    "caveat.async-function-state": "function_state return assertions invoke synchronous functions; async functions produce an error result instead of being awaited.",
+    "caveat.workspace-relative-paths": "Workspace files are addressed by relative paths such as `names.txt`; absolute paths and parent traversal are not valid activity paths.",
+    "caveat.content-assertion-single-match-mode": "A file content_assertion has one match_mode; use an anchored regex when the whole file shape matters while required fragments must be present.",
+    "caveat.csv-row-count-includes-header": "file_state CSV row_count counts the header row as well as data rows.",
+    "caveat.strict-prompt-counts": "With strict_prompt_inputs enabled, every configured input must be consumed and every input() call must have a configured response.",
+    "caveat.function-state-error-type-name": "A function_state expected_error_type passes only when the configured call raises an exception with that exact type name; it does not compare the message or subclass relationship.",
+    "caveat.seeded-module-imports": "Student-authored Python modules must be seeded in the workspace and imported by module name from the current workspace directory.",
+    "caveat.ast-pattern-identifier-wildcards": "AST `_`/`_name` wildcards apply to function/class names, import alias names, argument names, and attribute names; Global.names and keyword argument names remain exact.",
+    "caveat.ast-pattern-any-params-stub": "A trailing `...` in a function pattern such as `def f(a, ...):` matches the written positional prefix and leaves the remaining signature unconstrained."
+  },
+  "gaps": [
+    { "concept": "networking and sockets", "reason": "Network access is out of scope by policy; Pyodide activities have no network access.", "author_alternative": "Seed input files with python_setup.files and assess parsing or transformation locally." },
+    { "concept": "GUI, turtle, and pygame programming", "reason": "The browser runtime has no desktop GUI or graphics event loop for these libraries.", "author_alternative": "Assess coordinate or rendering logic through returned data and textual output." },
+    { "concept": "threads and multiprocessing", "reason": "multiprocessing is omitted and forbidden, and the activity contract does not provide thread scheduling assertions.", "author_alternative": "Teach concurrency concepts with diagrams or deterministic sequential simulations." },
+    { "concept": "timing and asymptotic complexity measurement", "reason": "There are no timing assertions; wall-clock measurements are noisy and budget-limited.", "author_alternative": "Use code_structure min_count checks for required loop or recursion constructs." },
+    { "concept": "unit-test frameworks", "reason": "unittest is stripped from the bundled runtime and pytest is not bundled.", "author_alternative": "Use activity test_cases as the grading suite and assert student-visible behavior directly." },
+    { "concept": "object instance state introspection", "reason": "The capture API exposes variables, functions, calls, and files, not arbitrary object attributes.", "author_alternative": "Check constructor and method behavior through function calls and captured output." },
+    { "concept": "keyword-argument function calls in function_state", "reason": "function_state return_assertion.arguments supplies positional arguments only.", "author_alternative": "Use positional parameter order for return checks and separately assert parameter names/count." },
+    { "concept": "exact random output", "reason": "The seed changes when source or prompt inputs change, so exact outputs are not stable across student edits.", "author_alternative": "Assert a range, type, or statistical invariant rather than one random sequence." },
+    { "concept": "large datasets", "reason": "Captured strings, sequences, output, and workspace snapshots have explicit size caps.", "author_alternative": "Use small deterministic fixtures that exercise the same parsing and aggregation logic." },
+    { "concept": "database file-content assertions", "reason": "sqlite3 can import, but file_state only asserts text, CSV, or binary existence and does not inspect database records.", "author_alternative": "Assert query results through captured variables or stdout, or use CSV/text fixtures." },
+    { "concept": "async function semantics", "reason": "function_state return assertions reject coroutine functions rather than awaiting them.", "author_alternative": "Teach async syntax through source structure or a separate runtime designed for asynchronous evaluation." },
+    { "concept": "exception messages and instance attributes", "reason": "function_state can assert an exact exception type name but cannot compare the exception message or inspect attributes on the exception object.", "author_alternative": "Catch the exception in student code and expose its message or selected attributes through stdout or a captured variable." }
+  ],
+  "activities": [
+    {
+      "slug": "01-hello-output",
+      "title": "Hello, World!",
+      "task": "Print `Hello, World!` exactly.",
+      "concepts": ["io.print", "string.literals"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["stdout_match.output_assertion", "code_structure.ast_pattern"],
+      "caveats": [],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/lowercase-output.py", "fails": ["test_output"], "hints": ["hint-case"] },
+        { "file": "misconceptions/prints-without-parentheses.py", "fails": ["test_output", "test_structure"], "hints": ["hint-parens"] }
+      ]
+    },
+    {
+      "slug": "02-personal-greeting",
+      "title": "Personal Greeting",
+      "task": "Ask the user for their name, then greet them by printing `Hello, <name>!`.",
+      "concepts": ["io.input", "string.concat", "string.formatting"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["stdout_match.prompt_inputs", "stdout_match.strict_prompt_inputs", "stdout_match.prompt_assertion", "stdout_match.output_assertion"],
+      "caveats": ["caveat.prompts-not-in-output"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/name-hardcoded.py", "fails": ["test_prompt", "test_output"], "hints": ["hint-hardcoded"] },
+        { "file": "misconceptions/concat-type-error.py", "fails": ["test_output"], "hints": ["hint-concat"] }
+      ]
+    },
+    {
+      "slug": "03-arithmetic-bill",
+      "title": "Arithmetic Bill",
+      "task": "4999 cents × 3; total, then 10% GST in whole cents; print both as dollars to 2 decimal places.",
+      "concepts": ["operators.arithmetic", "types.numeric", "string.formatting"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["stdout_match.output_assertion.regex", "code_structure.ast_pattern", "hint.test_fail.after_attempts"],
+      "caveats": [],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/division-instead-of-floor.py", "fails": ["test_output"], "hints": ["hint-div"] },
+        { "file": "misconceptions/no-rounding.py", "fails": ["test_output"], "hints": ["hint-round"] }
+      ]
+    },
+    {
+      "slug": "04-temperature-converter",
+      "title": "Temperature Converter",
+      "task": "Convert 36.6 °C with `F = C×9/5+32` and print one decimal place.",
+      "concepts": ["types.conversion", "string.formatting"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["stdout_match.output_assertion.regex", "variable_state.expected_type"],
+      "caveats": [],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/truncate-with-int.py", "fails": ["test_output"], "hints": ["hint-int"] },
+        { "file": "misconceptions/wrong-operator-order.py", "fails": ["test_output"], "hints": ["hint-order"] }
+      ]
+    },
+    {
+      "slug": "05-area-of-rectangle",
+      "title": "Area of a Rectangle",
+      "task": "Define `area(length, width)` so it returns the product of the two parameters.",
+      "concepts": ["function.define-call", "function.return", "function.parameters"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["function_state.return_assertion", "function_state.parameter_count"],
+      "caveats": ["caveat.function-calls-positional-only"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/prints-instead-of-returns.py", "fails": ["test_fn"], "hints": ["hint-return"] },
+        { "file": "misconceptions/one-parameter-function.py", "fails": ["test_fn"], "hints": ["hint-params"] }
+      ]
+    },
+    {
+      "slug": "06-grade-classifier",
+      "title": "Grade Classifier",
+      "task": "Map a score from 0 to 100 to a letter grade using an if/elif/else chain.",
+      "concepts": ["control.ifelse", "control.elif", "operators.comparison"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["stdout_match.output_assertion", "code_structure.ast_pattern.min_count", "hint.manual.none"],
+      "caveats": [],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/separate-if-statements.py", "fails": ["test_output"], "hints": ["hint-elif"] },
+        { "file": "misconceptions/boundary-off-by-one.py", "fails": ["test_output"], "hints": ["hint-boundary"] }
+      ]
+    },
+    {
+      "slug": "07-odd-even",
+      "title": "Odd or Even",
+      "task": "Return whether n is even, correctly handling negative values.",
+      "concepts": ["types.bool", "operators.arithmetic", "control.if"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["variable_state.expected_type", "variable_state.value_assertion", "code_structure.ast_pattern"],
+      "caveats": ["caveat.equals-python-types"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/positive-only-check.py", "fails": ["test_state"], "hints": ["hint-negative"] },
+        { "file": "misconceptions/returns-string.py", "fails": ["test_state"], "hints": ["hint-bool"] }
+      ]
+    },
+    {
+      "slug": "08-countdown-while",
+      "title": "Countdown with a While Loop",
+      "task": "Set `n = 5`, print 5 through 1 one per line with a while loop, then print `Liftoff!`.",
+      "concepts": ["loop.while", "loop.control"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["stdout_match.output_assertion.exact", "code_structure.ast_pattern", "hint.checklist", "hint.triggered", "hint.none_composite", "hint.manual"],
+      "caveats": [],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/while-true-no-exit.py", "fails": ["test_output"], "hints": ["hint-exit"] },
+        { "file": "misconceptions/for-loop-instead.py", "fails": ["test_structure"], "hints": ["hint-while"] }
+      ]
+    },
+    {
+      "slug": "09-multiplication-table",
+      "title": "Multiplication Table",
+      "task": "Set `n = 5` and print the 5-times table for rows 1 through 5.",
+      "concepts": ["loop.for-range", "loop.nested"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["stdout_match.output_assertion.exact", "code_structure.ast_pattern"],
+      "caveats": [],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/range-off-by-one.py", "fails": ["test_output"], "hints": ["hint-range"] }
+      ]
+    },
+    {
+      "slug": "10-sum-1-to-n",
+      "title": "Sum 1 to n with a Loop",
+      "task": "Set `n = 10`, accumulate the integers 1 through n into `total` with a loop.",
+      "concepts": ["loop.accumulator", "loop.for-range"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["variable_state.value_assertion", "code_structure.all_composite", "code_structure.named_wildcard", "hint.test_fail.after_attempts"],
+      "caveats": [],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/accumulator-not-reset.py", "fails": ["test_state"], "hints": ["hint-reset"] },
+        { "file": "misconceptions/sum-range-instead-of-loop.py", "fails": ["test_structure"], "hints": ["hint-accumulate"] }
+      ]
+    },
+    {
+      "slug": "11-nested-loop-grid",
+      "title": "Nested Loop Grid",
+      "task": "Set `n = 3` and `m = 4`, then print an n-by-m grid of asterisks.",
+      "concepts": ["loop.nested"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["stdout_match.output_assertion.exact", "code_structure.ast_pattern.min_count"],
+      "caveats": [],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/single-loop-string-multiply.py", "fails": ["test_structure", "test_output"], "hints": ["hint-nested"] }
+      ]
+    },
+    {
+      "slug": "12-break-first-match",
+      "title": "Stop at the First Match with break",
+      "task": "Find the first name beginning with S in the seeded names list and stop the loop there.",
+      "concepts": ["loop.control", "list.iterate"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["code_structure.all_composite", "code_structure.none", "hint.manual"],
+      "caveats": [],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/no-break.py", "fails": ["test_structure"], "hints": ["hint-break"] },
+        { "file": "misconceptions/while-loop-version.py", "fails": ["test_structure"], "hints": ["hint-for"] }
+      ]
+    },
+    {
+      "slug": "13-fizzbuzz",
+      "title": "FizzBuzz with an elif Chain",
+      "task": "For 1 through 15, print Fizz, Buzz, FizzBuzz, or the number on its own line using one if/elif chain.",
+      "concepts": ["loop.for-range", "control.elif", "operators.arithmetic"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["stdout_match.output_assertion.exact", "code_structure.ast_pattern.min_count", "hint.none_composite", "hint.test_fail.after_attempts"],
+      "caveats": [],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/separate-if-statements.py", "fails": ["test_output"], "hints": ["hint-order"] },
+        { "file": "misconceptions/fizzbuzz-checked-last.py", "fails": ["test_output"], "hints": ["hint-fizzbuzz"] }
+      ]
+    },
+    {
+      "slug": "14-list-comprehension",
+      "title": "Squares with a List Comprehension",
+      "task": "Set `n = 5` and build `squares` containing the squares of 0 through 4 with a list comprehension.",
+      "concepts": ["comprehension.list", "list.create"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["variable_state.list_assertions", "code_structure.ast_pattern", "hint.none_composite", "hint.manual"],
+      "caveats": [],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/append-in-loop.py", "fails": ["test_structure"], "hints": ["hint-comprehension"] }
+      ]
+    },
+    {
+      "slug": "15-list-basics",
+      "title": "Build and Update a List",
+      "task": "Build `[10, 20, 30]`, then set index 1 to `99`.",
+      "concepts": ["list.create", "list.mutate", "list.index-slice"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["variable_state.list_assertions", "variable_state.index_checks"],
+      "caveats": [],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/one-based-indexing.py", "fails": ["test_state"], "hints": ["hint-index"] }
+      ]
+    },
+    {
+      "slug": "16-list-stats",
+      "title": "Mean and Median with statistics",
+      "task": "Find the mean and median of a seeded list.",
+      "concepts": ["list.builtin", "module.statistics", "types.numeric"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["variable_state.value_assertion", "variable_state.expected_type", "code_structure.any_composite"],
+      "caveats": [],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/integer-division-mean.py", "fails": ["test_state"], "hints": ["hint-mean"] }
+      ]
+    },
+    {
+      "slug": "17-sorting",
+      "title": "Sorting People by Age",
+      "task": "Sort people by age with `sorted(..., key=...)`.",
+      "concepts": ["list.sort", "function.lambda", "algorithm.sort"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["variable_state.list_assertions", "code_structure.ast_pattern"],
+      "caveats": [],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/lexicographic-age-sort.py", "fails": ["test_state"], "hints": ["hint-key"] },
+        { "file": "misconceptions/mutates-with-sort.py", "fails": ["test_structure"], "hints": ["hint-sorted"] }
+      ]
+    },
+    {
+      "slug": "18-linear-search",
+      "title": "Linear Search",
+      "task": "`def search(items, target)` returns the matching index or `-1`.",
+      "concepts": ["algorithm.search", "function.return", "loop.for-iterable"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["function_state.return_assertion", "function_state.parameter_count", "code_structure.ast_pattern", "hint.test_fail.after_attempts"],
+      "caveats": ["caveat.function-calls-positional-only"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/returns-boolean.py", "fails": ["test_fn"], "hints": ["hint-index"] },
+        { "file": "misconceptions/returns-none.py", "fails": ["test_fn"], "hints": ["hint-sentinel"] }
+      ]
+    },
+    {
+      "slug": "19-frequency-count",
+      "title": "Word Frequency Count",
+      "task": "Count word frequencies into a dictionary.",
+      "concepts": ["dict.create", "dict.mutate", "loop.for-iterable"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["variable_state.value_assertion", "variable_state.expected_type", "code_structure.named_wildcard"],
+      "caveats": [],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/read-before-insert.py", "fails": ["test_state"], "hints": ["hint-get"] }
+      ]
+    },
+    {
+      "slug": "20-json-config",
+      "title": "Read a JSON Config File",
+      "task": "Parse a seeded `config.json`, prompt for one setting name, and print its value.",
+      "concepts": ["module.json", "dict.lookup", "file.read"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["stdout_match.prompt_inputs", "stdout_match.strict_prompt_inputs", "stdout_match.prompt_assertion", "stdout_match.output_assertion.exact", "variable_state.value_assertion", "code_structure.ast_pattern", "hint.none_composite", "python_setup.files"],
+      "caveats": ["caveat.prompts-not-in-output"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/string-slicing-instead-of-json.py", "fails": ["test_structure"], "hints": ["hint-json"] }
+      ]
+    },
+    {
+      "slug": "21-tuple-multiple-return",
+      "title": "Return Min and Max as a Tuple",
+      "task": "Define `def minmax(items)` that returns the smallest and largest values as one tuple: `minmax([3, 1, 2])` must return `(1, 3)`.",
+      "concepts": ["tuple.create", "function.multiple-return"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["function_state.return_assertion", "function_state.parameter_count", "code_structure.ast_pattern", "hint.source_regex"],
+      "caveats": ["caveat.function-calls-positional-only"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/returns-list.py", "fails": ["test_fn"], "hints": ["hint-tuple"] },
+        { "file": "misconceptions/returns-two-values.py", "fails": ["test_fn"], "hints": ["hint-return"] }
+      ]
+    },
+    {
+      "slug": "22-function-defaults",
+      "title": "Function Default Arguments",
+      "task": "Define `def greet(name, greeting=\"Hello\")` so that `greet(\"Ada\")` returns `\"Hello, Ada!\"` using the default argument.",
+      "concepts": ["function.parameters", "function.define-call"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["function_state.return_assertion", "function_state.parameter_count", "code_structure.ast_pattern"],
+      "caveats": ["caveat.function-calls-positional-only"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/missing-default.py", "fails": ["test_fn"], "hints": ["hint-default"] }
+      ]
+    },
+    {
+      "slug": "23-pure-vs-printing",
+      "title": "Return, Don't Print",
+      "task": "Define `def double(n)` that returns twice n; calling `double(4)` must return 8 and print nothing.",
+      "concepts": ["function.scope", "io.print"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["function_state.return_assertion", "stdout_match.execution_context.function", "hint.none_composite"],
+      "caveats": ["caveat.function-calls-positional-only"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/prints-outside-function.py", "fails": ["test_fn"], "hints": ["hint-pure"] }
+      ]
+    },
+    {
+      "slug": "24-factorial-recursion",
+      "title": "Recursive Factorial",
+      "task": "Define a recursive `factorial(n)` with base case 1 and recursive step `n * factorial(n - 1)`; factorial(5) is 120.",
+      "concepts": ["function.recursion", "function.parameters"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["function_state.return_assertion", "function_state.parameter_count", "code_structure.ast_pattern", "hint.test_fail.after_attempts"],
+      "caveats": ["caveat.function-calls-positional-only"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/iterative-loop.py", "fails": ["test_structure"], "hints": ["hint-recursion"] },
+        { "file": "misconceptions/wrong-base-case.py", "fails": ["test_fn"], "hints": ["hint-base"] }
+      ]
+    },
+    {
+      "slug": "25-lambda-sort-key",
+      "title": "Sort by Length with a Lambda Key",
+      "task": "Store the words sorted by length in `sorted_words` using `sorted(words, key=lambda w: len(w))`.",
+      "concepts": ["function.lambda", "list.sort"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["variable_state.list_assertions", "code_structure.ast_pattern"],
+      "caveats": [],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/key-len-directly.py", "fails": ["test_structure"], "hints": ["hint-lambda"] }
+      ]
+    },
+    {
+      "slug": "26-string-methods",
+      "title": "Normalise a String with Strip, Lower, and Split",
+      "task": "Normalise `text = \"  Ada LOVELACE  \"` to `\"ada lovelace\"` by stripping, lowercasing, splitting, and joining.",
+      "concepts": ["string.methods", "string.operations"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["stdout_match.output_assertion.exact", "code_structure.all_composite", "code_structure.ast_pattern"],
+      "caveats": [],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/split-empty-separator.py", "fails": ["test_output"], "hints": ["hint-split"] }
+      ]
+    },
+    {
+      "slug": "27-read-text-file",
+      "title": "Read a Text File",
+      "task": "Read names.txt and print how many lines it contains.",
+      "concepts": ["file.read", "file.with", "data.parsing"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["stdout_match.output_assertion.exact", "code_structure.ast_pattern", "python_setup.files", "hint.code_change.checklist", "hint.code_change.triggered"],
+      "caveats": ["caveat.workspace-relative-paths"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/opens-without-with.py", "fails": ["test_structure"], "hints": ["hint-with"] },
+        { "file": "misconceptions/hardcodes-path.py", "fails": ["test_output"], "hints": ["hint-path"] }
+      ]
+    },
+    {
+      "slug": "28-write-report",
+      "title": "Write a Report File",
+      "task": "Write report.txt containing exactly a two-line summary, replacing old content.",
+      "concepts": ["file.write", "string.formatting"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["file_state.text.content_assertion.regex", "file_state.setup_files", "code_structure.ast_pattern", "hint.code_change.checklist", "hint.code_change.triggered"],
+      "caveats": ["caveat.content-assertion-single-match-mode"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/stdout-only.py", "fails": ["test_file"], "hints": ["hint-write"] },
+        { "file": "misconceptions/appends-instead-of-overwriting.py", "fails": ["test_file"], "hints": ["hint-mode"] }
+      ]
+    },
+    {
+      "slug": "29-csv-average",
+      "title": "Average a CSV Column",
+      "task": "Read data.csv and write result.csv containing the mean score.",
+      "concepts": ["file.csv-read", "file.csv-write", "data.parsing"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["file_state.csv.csv_assertions", "stdout_match.output_assertion.exact", "python_setup.files", "code_structure.ast_pattern", "hint.code_change.checklist", "hint.code_change.triggered"],
+      "caveats": ["caveat.csv-row-count-includes-header"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/includes-header-in-average.py", "fails": ["test_file"], "hints": ["hint-header"] },
+        { "file": "misconceptions/writes-8-not-7.py", "fails": ["test_file"], "hints": ["hint-average"] }
+      ]
+    },
+    {
+      "slug": "30-csv-filter",
+      "title": "Filter CSV Rows",
+      "task": "Keep only the rows where ok is True and write result.csv.",
+      "concepts": ["file.csv-read", "file.csv-write", "control.if", "types.bool"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["file_state.csv.csv_assertions.bool", "python_setup.files", "hint.code_change.checklist", "hint.code_change.triggered"],
+      "caveats": ["caveat.csv-boolean-spellings"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/keeps-every-row.py", "fails": ["test_file"], "hints": ["hint-filter"] },
+        { "file": "misconceptions/compares-string-true.py", "fails": ["test_file"], "hints": ["hint-bool"] }
+      ]
+    },
+    {
+      "slug": "31-input-validation",
+      "title": "Validate Integer Input",
+      "task": "Read an integer with input(), retrying until the input is valid.",
+      "concepts": ["error.try-except", "error.specific-exception", "data.validation", "loop.while"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["stdout_match.prompt_inputs.strict", "stdout_match.prompt_assertion.match_any_item", "code_structure.ast_pattern", "hint.test_fail.after_attempts", "hint.code_change.checklist", "hint.code_change.triggered"],
+      "caveats": ["caveat.prompts-not-in-output", "caveat.strict-prompt-counts"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/bare-except.py", "fails": ["test_structure"], "hints": ["hint-valueerror"] },
+        { "file": "misconceptions/no-retry-loop.py", "fails": ["test_output"], "hints": ["hint-retry"] }
+      ]
+    },
+    {
+      "slug": "32-raise-error",
+      "title": "Raise a ValueError",
+      "task": "Define withdraw(amount), raising ValueError for negative amounts and returning the amount otherwise.",
+      "concepts": ["error.raise", "error.specific-exception"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["function_state.expected_error_type", "function_state.parameter_count", "code_structure.ast_pattern"],
+      "caveats": ["caveat.function-state-error-type-name", "caveat.function-calls-positional-only"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/prints-error-instead.py", "fails": ["test_fn", "test_structure"], "hints": ["hint-raise"] }
+      ]
+    },
+    {
+      "slug": "33-math-module",
+      "title": "Hypotenuse with math",
+      "task": "Given legs a = 3 and b = 4, print the hypotenuse to 2 decimals using math.sqrt.",
+      "concepts": ["module.import", "module.math", "operators.arithmetic"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["stdout_match.output_assertion.exact", "code_structure.any", "ast_pattern.import-alias-wildcard", "hint.conditions.all-none-composite", "hint.conditions.source_regex"],
+      "caveats": ["caveat.ast-pattern-identifier-wildcards"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/sqrt-with-power.py", "fails": ["test_structure"], "hints": ["hint-sqrt"] },
+        { "file": "misconceptions/missing-import.py", "fails": ["test_output"], "hints": ["hint-import"] }
+      ]
+    },
+    {
+      "slug": "34-random-dice",
+      "title": "Dice Roll Frequency",
+      "task": "Roll a fair die 1000 times with random.randint(1, 6), seed once before the loop, tally faces, and report the count of sixes.",
+      "concepts": ["module.random", "algorithm.frequency", "dict.mutate"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["code_structure.ast_pattern", "variable_state.expected_type", "variable_state.comparison.gt", "hint.conditions.source_regex"],
+      "caveats": ["caveat.random-seed"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/reseed-each-roll.py", "fails": ["test_state"], "hints": ["hint-seed"] }
+      ]
+    },
+    {
+      "slug": "35-class-definition",
+      "title": "A Dog Class",
+      "task": "Define class Dog with __init__(self, name, age) storing name and age and bark(self) printing `Rex says woof!`; create and call one Dog.",
+      "concepts": ["class.define", "class.init", "class.methods"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["stdout_match.output_assertion.exact", "code_structure.all", "ast_pattern.class-body-ellipsis", "ast_pattern.any-params-stub"],
+      "caveats": ["caveat.ast-pattern-any-params-stub"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/no-init.py", "fails": ["test_structure"], "hints": ["hint-init"] },
+        { "file": "misconceptions/init-ignores-self.py", "fails": ["test_output"], "hints": ["hint-self"] }
+      ]
+    },
+    {
+      "slug": "36-modular-program",
+      "title": "Use a Helper Module",
+      "task": "Import the seeded helper.py module and print helper.format_name(\"ada lovelace grace hopper\").",
+      "concepts": ["module.import", "module.student", "function.define-call"],
+      "audiences": ["wa-high-school", "first-year-university"],
+      "authoring_features": ["python_setup.files.seeded-module", "stdout_match.output_assertion.exact", "code_structure.ast_pattern", "file_state.content_assertion.contains"],
+      "caveats": ["caveat.seeded-module-imports"],
+      "reference": "reference.py",
+      "misconceptions": [
+        { "file": "misconceptions/inline-format-name.py", "fails": ["test_structure"], "hints": ["hint-module"] }
+      ]
+    }
+  ]
+}

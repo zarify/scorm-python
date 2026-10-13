@@ -1,0 +1,111 @@
+{
+  "metadata": {
+    "activity_id": "20_json_config",
+    "title": "Read a JSON Config File",
+    "version": "1.0",
+    "description": "Parse a JSON config file and print a prompted setting's value."
+  },
+  "instructions": {
+    "main": "`config.json` lives in the workspace. Ask `Setting name?`, read the setting name, and print the value stored under that name.",
+    "steps": [
+      "Import the module: `import json`.",
+      "Load the file: `with open(\"config.json\") as f: config = json.load(f)`.",
+      "Ask with `name = input(\"Setting name?\")`, then `print(config[name])` — for the response `theme` the output is `dark`."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [
+      {
+        "path": "config.json",
+        "content": "{\n  \"app_name\": \"Aurora\",\n  \"version\": \"2.1\",\n  \"theme\": \"dark\"\n}\n"
+      }
+    ],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Start with `import json`, load config.json, then prompt for the name and `print(config[name])`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-json",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "none",
+          "conditions": [
+            { "type": "ast_pattern", "pattern": "import json" }
+          ]
+        }
+      },
+      "message": "`config.json` is JSON — parse it with `import json` and `json.load(...)` instead of slicing the raw text; slicing breaks as soon as the formatting changes.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "You parsed the config as JSON and printed the requested setting.",
+    "test_cases": [
+      {
+        "id": "test_prompt",
+        "type": "stdout_match",
+        "points": 40,
+        "prompt_inputs": ["theme"],
+        "strict_prompt_inputs": true,
+        "feedback_on_pass": "The prompt text matches and the value prints exactly.",
+        "feedback_on_fail": "Ask with exactly `input(\"Setting name?\")` and, when the answer is `theme`, print `dark`.",
+        "prompt_assertion": {
+          "enabled": true,
+          "expected": "Setting name?",
+          "match_mode": "exact"
+        },
+        "output_assertion": {
+          "enabled": true,
+          "expected": "dark\n",
+          "match_mode": "exact"
+        }
+      },
+      {
+        "id": "test_state",
+        "type": "variable_state",
+        "points": 30,
+        "prompt_inputs": ["theme"],
+        "strict_prompt_inputs": true,
+        "feedback_on_pass": "value holds the setting \"dark\".",
+        "feedback_on_fail": "Store the looked-up setting in `value` — for the name `theme` it must be the string \"dark\".",
+        "variable_name": "value",
+        "expected_type": "string",
+        "value_assertion_enabled": true,
+        "expected_value": "dark",
+        "comparison": "equals"
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 30,
+        "feedback_on_pass": "You imported the json module.",
+        "feedback_on_fail": "Parse the file as JSON: `import json` then `json.load(f)` — don't slice the raw text by hand.",
+        "conditions": { "type": "ast_pattern", "pattern": "import json" }
+      }
+    ]
+  }
+}

@@ -1085,6 +1085,26 @@ test('function_state return assertions need a real assertion', () => {
     id: 'call', type: 'function_state', points: 5, function_name: 'greet',
     return_assertion: { enabled: true, expected_type: 'list' },
   }));
+  assertValid(validateTestCaseConfig({
+    id: 'call', type: 'function_state', points: 5, function_name: 'withdraw',
+    return_assertion: { enabled: true, arguments: [-1], expected_error_type: 'ValueError' },
+  }));
+  assertOneErrorAt(
+    validateTestCaseConfig({
+      id: 'call', type: 'function_state', points: 5, function_name: 'withdraw',
+      return_assertion: { enabled: true, expected_error_type: 42 },
+    }),
+    `${TEST_PATH}.return_assertion.expected_error_type`,
+    /Must be a non-empty string/,
+  );
+  assertOneErrorAt(
+    validateTestCaseConfig({
+      id: 'call', type: 'function_state', points: 5, function_name: 'withdraw',
+      return_assertion: { enabled: true, expected_type: 'int', expected_error_type: 'ValueError' },
+    }),
+    `${TEST_PATH}.return_assertion.expected_error_type`,
+    /Cannot combine an expected error type/,
+  );
 });
 
 test('function_state accepts prompt_inputs without the string-array rule', () => {

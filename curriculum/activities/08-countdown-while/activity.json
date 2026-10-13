@@ -1,0 +1,123 @@
+{
+  "metadata": {
+    "activity_id": "08_countdown_while",
+    "title": "Countdown with a While Loop",
+    "version": "1.0",
+    "description": "Count down from 5 to 1 and print Liftoff! using a while loop with a real exit condition."
+  },
+  "instructions": {
+    "main": "Set `n = 5` and use a `while` loop to print `5`, `4`, `3`, `2`, `1` (one per line), then print `Liftoff!`.",
+    "steps": [
+      "Start with `n = 5` and loop while `n > 0`.",
+      "Print `n` inside the loop, then subtract 1 from `n`.",
+      "After the loop ends, print `Liftoff!`."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Start with `n = 5` and a `while n > 0:` loop.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-exit",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "while True:\n    ..." }
+      },
+      "message": "`while True:` never ends on its own — loop while a condition like `n > 0` becomes false.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-while",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "for _ in range(...):\n    ..." }
+      },
+      "message": "This task requires a `while` loop — a `for ... in range(...)` loop will not pass the structure check.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-no-for",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "none",
+          "conditions": [
+            { "type": "ast_pattern", "pattern": "for _ in range(...):\n    ..." },
+            { "type": "ast_pattern", "pattern": "while True:\n    ..." }
+          ]
+        },
+        "invalidate_on_condition_false": true
+      },
+      "message": "Keep it a plain `while n > 0:` loop — avoid `for ... in range(...)` and `while True:` without an exit.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-manual-loop",
+      "trigger": { "event": "manual" },
+      "message": "Check that each iteration reduces `n` so the condition eventually becomes false before `Liftoff!` prints.",
+      "display_mode": "triggered",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "Your while loop counts down correctly and exits before printing Liftoff!",
+    "test_cases": [
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 70,
+        "feedback_on_pass": "The countdown and Liftoff! match exactly.",
+        "feedback_on_fail": "Print 5 through 1 one per line, then `Liftoff!` — the program must finish, not loop forever.",
+        "output_assertion": {
+          "enabled": true,
+          "expected": "5\n4\n3\n2\n1\nLiftoff!\n",
+          "match_mode": "exact"
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 30,
+        "feedback_on_pass": "You used a while loop.",
+        "feedback_on_fail": "Use a `while` loop — the structure check requires one.",
+        "conditions": { "type": "ast_pattern", "pattern": "while _:\n    ..." }
+      }
+    ]
+  }
+}

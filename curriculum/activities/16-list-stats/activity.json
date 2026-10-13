@@ -1,0 +1,86 @@
+{
+  "metadata": {
+    "activity_id": "16_list_stats",
+    "title": "Mean and Median with statistics",
+    "version": "1.0",
+    "description": "Compute mean and median from a seeded list with the statistics module."
+  },
+  "instructions": {
+    "main": "Given `data = [2, 4, 5, 6, 9]`, store the mean in `mean` and the median in `median` using Python's `statistics` module.",
+    "steps": [
+      "Import the module: `import statistics`.",
+      "Compute the mean with `mean = statistics.mean(data)` — for this list it is a decimal (5.2), not a whole number.",
+      "Compute the median with `median = statistics.median(data)`."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Start with `import statistics`, then `mean = statistics.mean(data)` and `median = statistics.median(data)`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-mean",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "sum(_) // _" }
+      },
+      "message": "`//` floors to a whole number, so the mean becomes 5 instead of 5.2. Use `statistics.mean(data)` (or `sum(data) / len(data)`) to keep the decimal.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "You computed the mean (5.2) and median with the statistics module.",
+    "test_cases": [
+      {
+        "id": "test_state",
+        "type": "variable_state",
+        "points": 60,
+        "feedback_on_pass": "mean holds 5.2, the exact average of the list.",
+        "feedback_on_fail": "The mean of [2, 4, 5, 6, 9] is 5.2 — a fractional value. Check you did not floor it with `//` or replace it with the median.",
+        "variable_name": "mean",
+        "expected_type": "float",
+        "value_assertion_enabled": true,
+        "expected_value": 5.2,
+        "comparison": "equals"
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 40,
+        "feedback_on_pass": "You imported the statistics module.",
+        "feedback_on_fail": "Use the statistics module — `import statistics`, or bring the functions in with `from statistics import mean`.",
+        "conditions": {
+          "type": "any",
+          "conditions": [
+            { "type": "ast_pattern", "pattern": "import statistics" },
+            { "type": "ast_pattern", "pattern": "from statistics import _" }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "metadata": {
+    "activity_id": "11_nested_loop_grid",
+    "title": "Nested Loop Grid",
+    "version": "1.0",
+    "description": "Print an n-by-m grid of stars using nested for loops."
+  },
+  "instructions": {
+    "main": "Set `n = 3` and `m = 4`, then print a 3x4 grid of `*` — four stars per row, one row per line.",
+    "steps": [
+      "Use an outer loop for the rows and an inner loop for the columns.",
+      "Print each star with `end=\"\"` so the row stays on one line.",
+      "Print an empty line at the end of each row."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Start with an outer loop over `range(n)` and an inner loop over `range(m)`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-nested",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "for _ in _:\n    ...",
+          "max_count": 1
+        }
+      },
+      "message": "You need one loop inside another — an outer loop for rows and an inner loop for columns.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "Your nested loops print the full grid.",
+    "test_cases": [
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 70,
+        "feedback_on_pass": "The 3x4 grid prints exactly as required.",
+        "feedback_on_fail": "Print three rows of four stars, each row on its own line.",
+        "output_assertion": {
+          "enabled": true,
+          "expected": "****\n****\n****\n",
+          "match_mode": "exact"
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 30,
+        "feedback_on_pass": "You used two for loops.",
+        "feedback_on_fail": "Use two `for` loops — one inside the other.",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "for _ in _:\n    ...",
+          "min_count": 2
+        }
+      }
+    ]
+  }
+}

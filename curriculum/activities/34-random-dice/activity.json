@@ -1,0 +1,93 @@
+{
+  "metadata": {
+    "activity_id": "34_random_dice",
+    "title": "Dice Roll Frequency",
+    "version": "1.0",
+    "description": "Roll a die 1000 times with the random module and tally the sixes into a dict."
+  },
+  "instructions": {
+    "main": "Roll a fair die 1000 times with `random.randint(1, 6)`, tally every face into the dict `counts`, and report how many sixes you rolled in the variable `sixes`.",
+    "steps": [
+      "Import the module and seed ONCE before the loop: `import random` then `random.seed(42)` — the seed makes the experiment reproducible.",
+      "Loop 1000 times: `roll = random.randint(1, 6)` and `counts[roll] = counts.get(roll, 0) + 1`.",
+      "Finish with `sixes = counts.get(6, 0)` and `print(sixes)` — with this seed you roll 175 sixes."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Start with `import random`, seed once, build `counts = {}`, then loop `for _ in range(1000):` tallying each roll.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-seed",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "source_regex",
+          "pattern": "range\\(1000\\):[\\s\\S]*?random\\.seed\\("
+        }
+      },
+      "message": "`random.seed(...)` belongs OUTSIDE the loop — reseeding every roll restarts the generator each time, so you draw the same face 1000 times and `sixes` collapses to 0 (or 1000). Seed once before the loop.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "You seeded once, rolled 1000 times, and tallied the sixes correctly.",
+    "test_cases": [
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 30,
+        "feedback_on_pass": "You imported the random module.",
+        "feedback_on_fail": "Roll the die with the standard library: `import random` and `random.randint(1, 6)`.",
+        "conditions": { "type": "ast_pattern", "pattern": "import random" }
+      },
+      {
+        "id": "test_dict",
+        "type": "variable_state",
+        "points": 30,
+        "feedback_on_pass": "counts is a dict of face to tally.",
+        "feedback_on_fail": "Store the tallies in a dict named `counts` — `counts = {}`, then `counts[roll] = counts.get(roll, 0) + 1`.",
+        "variable_name": "counts",
+        "expected_type": "dict",
+        "value_assertion_enabled": false
+      },
+      {
+        "id": "test_state",
+        "type": "variable_state",
+        "points": 40,
+        "feedback_on_pass": "sixes holds a plausible count above 100.",
+        "feedback_on_fail": "`sixes` must be an int greater than 100 — after 1000 genuine (never reseeded) rolls you should count roughly one six in six rolls. Use `sixes = counts.get(6, 0)`.",
+        "variable_name": "sixes",
+        "expected_type": "int",
+        "value_assertion_enabled": true,
+        "expected_value": 100,
+        "comparison": "gt"
+      }
+    ]
+  }
+}

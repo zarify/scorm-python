@@ -1,0 +1,95 @@
+{
+  "metadata": {
+    "activity_id": "01_hello_output",
+    "title": "Hello, World!",
+    "version": "1.0",
+    "description": "Print an exact greeting and recognize a Python call statement."
+  },
+  "instructions": {
+    "main": "Print `Hello, World!` exactly.",
+    "steps": [
+      "Use Python's print function.",
+      "Match the capitalization and punctuation exactly."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Start with a call to `print(...)`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-case",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "hello, world!" }
+      },
+      "message": "Python's string comparison is case-sensitive; match the required capitalization.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-parens",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "print\\s+" }
+      },
+      "message": "A Python function call needs parentheses: `print(\"text\")`.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "Your greeting is exact and uses a valid print call.",
+    "test_cases": [
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 80,
+        "feedback_on_pass": "The output matches exactly.",
+        "feedback_on_fail": "Print `Hello, World!` with the exact capitalization and punctuation.",
+        "output_assertion": {
+          "enabled": true,
+          "expected": "Hello, World!\n",
+          "match_mode": "exact"
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 20,
+        "feedback_on_pass": "You used a print call.",
+        "feedback_on_fail": "Use the Python `print(...)` function call.",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "print(...)"
+        }
+      }
+    ]
+  }
+}

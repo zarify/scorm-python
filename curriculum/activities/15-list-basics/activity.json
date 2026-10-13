@@ -1,0 +1,80 @@
+{
+  "metadata": {
+    "activity_id": "15_list_basics",
+    "title": "Build and Update a List",
+    "version": "1.0",
+    "description": "Create a three-element list and replace an element using zero-based indexing."
+  },
+  "instructions": {
+    "main": "Build `items = [10, 20, 30]`, then set index 1 to `99` — the list must end as `[10, 99, 30]`.",
+    "steps": [
+      "Create the list: `items = [10, 20, 30]`.",
+      "Replace the second element with `items[1] = 99`.",
+      "Python numbers indexes from 0, so index 1 is the second element."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Start with `items = [10, 20, 30]`, then `items[1] = 99`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-index",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "items[2] = _" }
+      },
+      "message": "Python lists are 0-based: the second element is index 1, not 2. `items[2] = 99` changes the third element, leaving your list as [10, 20, 99].",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "Your list is built and index 1 holds 99 — [10, 99, 30].",
+    "test_cases": [
+      {
+        "id": "test_state",
+        "type": "variable_state",
+        "points": 100,
+        "feedback_on_pass": "items is [10, 99, 30] with 99 stored at index 1.",
+        "feedback_on_fail": "After running, `items` must be [10, 99, 30] — check which index you assigned to; Python counts from 0.",
+        "variable_name": "items",
+        "expected_type": "list",
+        "list_assertions": {
+          "length_enabled": true,
+          "length_value": 3,
+          "length_comparison": "equals",
+          "values_enabled": true,
+          "values_match_mode": "exact_order",
+          "expected_values": [10, 99, 30],
+          "index_checks": [
+            { "index": 1, "expected_value": 99, "expected_type": "int" }
+          ]
+        }
+      }
+    ]
+  }
+}

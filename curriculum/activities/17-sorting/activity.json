@@ -1,0 +1,98 @@
+{
+  "metadata": {
+    "activity_id": "17_sorting",
+    "title": "Sorting People by Age",
+    "version": "1.0",
+    "description": "Sort (name, age) pairs by numeric age using sorted() with a lambda key."
+  },
+  "instructions": {
+    "main": "Given `people = [(\"Sam\", \"9\"), (\"Ada\", \"41\"), (\"Bo\", \"35\")]` — ages stored as text — sort the pairs youngest-first into `sorted_people` with `sorted(people, key=...)`.",
+    "steps": [
+      "Ages are strings, so convert inside the key: `key=lambda person: int(person[1])`.",
+      "Write `sorted_people = sorted(people, key=lambda person: int(person[1]))`.",
+      "`sorted(...)` returns a new list — leave `people` unchanged."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Start with `sorted_people = sorted(people, key=lambda person: int(person[1]))`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-key",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "sorted(_, key=lambda _: _[_])" }
+      },
+      "message": "The key returns the text \"9\", \"41\", \"35\" — compared as text, \"9\" sorts after \"41\". Wrap the age in `int(person[1])` so ages compare as numbers.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-sorted",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "\\.sort\\s*\\(" }
+      },
+      "message": "Use `sorted(...)` — it returns a NEW sorted list. `.sort()` reorders `people` in place and returns None.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "You sorted the pairs youngest-first with a numeric sort key.",
+    "test_cases": [
+      {
+        "id": "test_state",
+        "type": "variable_state",
+        "points": 60,
+        "feedback_on_pass": "sorted_people orders the pairs youngest-first: Sam, Bo, Ada.",
+        "feedback_on_fail": "sorted_people must be [(\"Sam\", \"9\"), (\"Bo\", \"35\"), (\"Ada\", \"41\")] — sort the ages as numbers, not as text.",
+        "variable_name": "sorted_people",
+        "expected_type": "list",
+        "list_assertions": {
+          "length_enabled": true,
+          "length_value": 3,
+          "length_comparison": "equals",
+          "values_enabled": true,
+          "values_match_mode": "exact_order",
+          "expected_values": [["Sam", "9"], ["Bo", "35"], ["Ada", "41"]]
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 40,
+        "feedback_on_pass": "You used sorted() with a key lambda.",
+        "feedback_on_fail": "Build the result with `sorted_people = sorted(people, key=lambda ...)` — `sorted(..., key=...)` returns a new list; `.sort()` mutates the original.",
+        "conditions": { "type": "ast_pattern", "pattern": "sorted(_, key=lambda _: _)" }
+      }
+    ]
+  }
+}

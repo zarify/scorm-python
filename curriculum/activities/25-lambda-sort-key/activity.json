@@ -1,0 +1,85 @@
+{
+  "metadata": {
+    "activity_id": "25_lambda_sort_key",
+    "title": "Sort by Length with a Lambda Key",
+    "version": "1.0",
+    "description": "Sort strings by their length using sorted() with a lambda key function."
+  },
+  "instructions": {
+    "main": "Given `words = [\"strawberry\", \"fig\", \"banana\", \"kiwi\"]`, sort them by length (shortest first) with `sorted(..., key=lambda ...)`. Store the result in `sorted_words`.",
+    "steps": [
+      "Call `sorted(words, key=lambda w: len(w))`.",
+      "Assign the result to `sorted_words`.",
+      "The result must be `['fig', 'kiwi', 'banana', 'strawberry']`."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Use `sorted_words = sorted(words, key=lambda w: len(w))`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-lambda",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "sorted(_, key=len)" }
+      },
+      "message": "This task requires a lambda key — `key=len` works but the checker wants `key=lambda w: len(w)`.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "You sorted the words by length with a lambda key.",
+    "test_cases": [
+      {
+        "id": "test_state",
+        "type": "variable_state",
+        "points": 60,
+        "variable_name": "sorted_words",
+        "expected_type": "list",
+        "feedback_on_pass": "sorted_words holds the words shortest-first.",
+        "feedback_on_fail": "sorted_words must be ['fig', 'kiwi', 'banana', 'strawberry'] — sort by length, shortest first.",
+        "list_assertions": {
+          "length_enabled": true,
+          "length_value": 4,
+          "length_comparison": "equals",
+          "values_enabled": true,
+          "values_match_mode": "exact_order",
+          "expected_values": ["fig", "kiwi", "banana", "strawberry"]
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 40,
+        "feedback_on_pass": "You used sorted() with a lambda key.",
+        "feedback_on_fail": "Use `sorted(words, key=lambda w: len(w))` — the key must be a lambda.",
+        "conditions": { "type": "ast_pattern", "pattern": "sorted(_, key=lambda _: _)" }
+      }
+    ]
+  }
+}

@@ -78,7 +78,7 @@ const LIST_ASSERTION_FIELDS = [
 ];
 const INDEX_CHECK_FIELDS = ['index', 'expected_value', 'expected_type'];
 const RETURN_ASSERTION_FIELDS = [
-  'enabled', 'arguments', 'expected_type', 'value_assertion_enabled', 'expected_value', 'comparison',
+  'enabled', 'arguments', 'expected_type', 'expected_error_type', 'value_assertion_enabled', 'expected_value', 'comparison',
   'show_coerced_value_hint', 'show_expected', 'show_actual', 'success_message', 'failure_message',
   'list_assertions',
 ];
@@ -715,6 +715,19 @@ function validateFunctionReturnAssertion(assertion, path, errors) {
   if (assertion.value_assertion_enabled !== undefined && typeof assertion.value_assertion_enabled !== 'boolean') {
     errors.push({ path: `${path}.value_assertion_enabled`, message: 'Must be a boolean' });
   }
+  if (
+    assertion.expected_error_type !== undefined
+    && (typeof assertion.expected_error_type !== 'string' || !assertion.expected_error_type.trim())
+  ) {
+    errors.push({ path: `${path}.expected_error_type`, message: 'Must be a non-empty string' });
+  }
+  if (
+    typeof assertion.expected_error_type === 'string'
+    && assertion.expected_error_type.trim()
+    && assertion.enabled === false
+  ) {
+    errors.push({ path: `${path}.enabled`, message: 'Must be true when expected_error_type is set' });
+  }
   if (assertion.show_coerced_value_hint !== undefined && typeof assertion.show_coerced_value_hint !== 'boolean') {
     errors.push({ path: `${path}.show_coerced_value_hint`, message: 'Must be a boolean' });
   }
@@ -740,19 +753,27 @@ function validateFunctionReturnAssertion(assertion, path, errors) {
   const expectsListChecks = hasEnabledListAssertion(normalized);
   const valueAssertionEnabled = normalized.value_assertion_enabled;
   const typeAssertionEnabled = normalizeVariableType(normalized.expected_type) !== 'any';
+  const expectedErrorType = normalized.expected_error_type;
 
-  if (normalized.enabled && valueAssertionEnabled && normalized.expected_value === undefined) {
+  if (normalized.enabled && expectedErrorType) {
+    if (valueAssertionEnabled || typeAssertionEnabled || expectsListChecks) {
+      errors.push({
+        path: `${path}.expected_error_type`,
+        message: 'Cannot combine an expected error type with return value, type, or list assertions',
+      });
+    }
+  } else if (normalized.enabled && valueAssertionEnabled && normalized.expected_value === undefined) {
     errors.push({
       path: `${path}.expected_value`,
       message: 'Required when value_assertion_enabled is true',
     });
-  }
-  if (normalized.enabled && !valueAssertionEnabled && !typeAssertionEnabled && !expectsListChecks) {
+  } else if (normalized.enabled && !valueAssertionEnabled && !typeAssertionEnabled && !expectsListChecks) {
     errors.push({
       path,
-      message: 'return_assertion must enable a value assertion, a type assertion, or a list assertion',
+      message: 'return_assertion must enable a value assertion, a type assertion, a list assertion, or an expected error type',
     });
   }
+
 }
 
 function validateCsvAssertions(csvAssertions, path, errors) {

@@ -1,0 +1,101 @@
+{
+  "metadata": {
+    "activity_id": "21_tuple_multiple_return",
+    "title": "Return Min and Max as a Tuple",
+    "version": "1.0",
+    "description": "Return two values from one function by packing them into a tuple."
+  },
+  "instructions": {
+    "main": "Define `minmax(items)` so that it returns the smallest and largest values as a tuple — `minmax([3, 1, 2])` must return `(1, 3)`.",
+    "steps": [
+      "Define `def minmax(items):` with exactly one parameter.",
+      "Return both values in ONE statement: `return min(items), max(items)` — the comma creates a tuple.",
+      "Do not print the values; return them."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Define `def minmax(items):` and finish with `return min(items), max(items)`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-tuple",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "return [_, _]" }
+      },
+      "message": "A list `[a, b]` is not a tuple — drop the brackets: `return min(items), max(items)`.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-return",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "return\\s+\\w+\\s*\\n\\s*return\\s+\\w+" }
+      },
+      "message": "A function returns only once per call — a second `return` never runs. Return both values together as ONE tuple.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "`minmax` returns the smallest and largest values as a tuple.",
+    "test_cases": [
+      {
+        "id": "test_fn",
+        "type": "function_state",
+        "points": 60,
+        "function_name": "minmax",
+        "parameter_count_enabled": true,
+        "parameter_count": 1,
+        "feedback_on_pass": "`minmax([3, 1, 2])` returns the tuple `(1, 3)`.",
+        "feedback_on_fail": "`minmax([3, 1, 2])` must return the tuple `(1, 3)` — use `return min(items), max(items)` in a single return statement.",
+        "return_assertion": {
+          "enabled": true,
+          "arguments": [[3, 1, 2]],
+          "expected_type": "tuple",
+          "value_assertion_enabled": true,
+          "expected_value": [1, 3],
+          "comparison": "equals",
+          "show_expected": true,
+          "show_actual": true
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 40,
+        "feedback_on_pass": "The function returns a value.",
+        "feedback_on_fail": "Use a `return` statement inside `minmax` — do not print the result.",
+        "conditions": { "type": "ast_pattern", "pattern": "return _" }
+      }
+    ]
+  }
+}

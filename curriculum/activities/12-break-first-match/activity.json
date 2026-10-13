@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "activity_id": "12_break_first_match",
+    "title": "Stop at the First Match with break",
+    "version": "1.0",
+    "description": "Find the first name that starts with S and stop searching immediately using break."
+  },
+  "instructions": {
+    "main": "Given `names = [\"Anna\", \"Sam\", \"Grace\", \"Simon\", \"Tina\"]`, find the FIRST name that starts with `S` and stop searching as soon as you find it. Store it in `first`.",
+    "steps": [
+      "Loop over `names` with a `for` loop.",
+      "Inside the loop, test `name.startswith(\"S\")`.",
+      "When you find a match, store it in `first` and `break` out of the loop."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Start with `for name in names:` and test `name.startswith(\"S\")` inside the loop.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-break",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "none",
+          "conditions": [{ "type": "ast_pattern", "pattern": "break" }]
+        }
+      },
+      "message": "The task wants the FIRST match only — use `break` to leave the loop as soon as you find it.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-for",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "while _:\n    ..." }
+      },
+      "message": "Iterate with a `for name in names:` loop — a `while` loop plus manual index tracking is not needed here.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-manual-break",
+      "trigger": {
+        "event": "manual",
+        "conditions": {
+          "type": "none",
+          "conditions": [{ "type": "ast_pattern", "pattern": "break" }]
+        }
+      },
+      "message": "Inside the `if`, assign `first = name` and then call `break` on the next line.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "Your loop finds the first S-name and stops immediately.",
+    "test_cases": [
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 100,
+        "feedback_on_pass": "You use break in a loop that is not a while loop.",
+        "feedback_on_fail": "Use a `for` loop over `names` and `break` out of it right after you find the first match.",
+        "conditions": {
+          "type": "all",
+          "conditions": [
+            { "type": "ast_pattern", "pattern": "break", "min_count": 1 },
+            {
+              "type": "none",
+              "conditions": [{ "type": "ast_pattern", "pattern": "while _:\n    ..." }]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,120 @@
+{
+  "metadata": {
+    "activity_id": "13_fizzbuzz",
+    "title": "FizzBuzz with an elif Chain",
+    "version": "1.0",
+    "description": "Print Fizz, Buzz, or FizzBuzz for 1..n using a single if/elif chain so exactly one line prints per number."
+  },
+  "instructions": {
+    "main": "Set `n = 15` and print FizzBuzz for 1..n: multiples of 15 print `FizzBuzz`, multiples of 3 print `Fizz`, multiples of 5 print `Buzz`, everything else prints the number — exactly one line per number.",
+    "steps": [
+      "Use one `if`/`elif` chain so only one branch runs per number.",
+      "Check divisibility by 15 FIRST, then 3, then 5."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Start with `for i in range(1, n + 1):` and an `if i % 15 == 0:` branch.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-order",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "none",
+          "conditions": [
+            { "type": "ast_pattern", "pattern": "if _:\n    ...\nelif _:\n    ..." }
+          ]
+        }
+      },
+      "message": "Separate `if` statements each run on their own — chain them with `elif` so only one branch prints per number.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-fizzbuzz",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "elif\\s+i\\s*%\\s*15" }
+      },
+      "message": "Check `i % 15` FIRST in the chain — later `elif` branches never run when an earlier condition already matched.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-after-fail",
+      "trigger": {
+        "event": "test_fail",
+        "after_attempts": 1,
+        "conditions": {
+          "type": "none",
+          "conditions": [
+            { "type": "ast_pattern", "pattern": "if _:\n    ...\nelif _:\n    ..." }
+          ]
+        }
+      },
+      "message": "Compare your output with the expected transcript — one wrong branch or an extra line usually means the checks are in the wrong order or not chained with elif.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "Your elif chain prints exactly one correct line per number.",
+    "test_cases": [
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 70,
+        "feedback_on_pass": "The full FizzBuzz transcript matches exactly.",
+        "feedback_on_fail": "Compare each line with the expected transcript — check the order of your divisibility tests and that only one line prints per number.",
+        "output_assertion": {
+          "enabled": true,
+          "expected": "1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz\n",
+          "match_mode": "exact"
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 30,
+        "feedback_on_pass": "You used an if/elif chain with at least two branches.",
+        "feedback_on_fail": "Use an `if`/`elif` chain (at least two branches) rather than unrelated statements.",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "if _:\n    ...",
+          "min_count": 2
+        }
+      }
+    ]
+  }
+}

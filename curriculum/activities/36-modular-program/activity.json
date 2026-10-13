@@ -1,0 +1,111 @@
+{
+  "metadata": {
+    "activity_id": "36_modular_program",
+    "title": "Use a Helper Module",
+    "version": "1.0",
+    "description": "Import a provided helper module and reuse its format_name function instead of rewriting it."
+  },
+  "instructions": {
+    "main": "`helper.py` lives in the workspace and defines `format_name(text)`. Import it and print `helper.format_name(\"ada lovelace grace hopper\")`.",
+    "steps": [
+      "Import the module: `import helper`.",
+      "Call `print(helper.format_name(\"ada lovelace grace hopper\"))`.",
+      "The output is `Ada Lovelace Grace Hopper` — the capitalisation comes from the module, not from your own code."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [
+      {
+        "path": "helper.py",
+        "content": "def format_name(text):\n    \"\"\"Capitalise every word in text.\"\"\"\n    words = text.split()\n    return \" \".join(word.capitalize() for word in words)\n"
+      }
+    ],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Start with `import helper`, then `print(helper.format_name(\"ada lovelace grace hopper\"))`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-module",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "all",
+          "conditions": [
+            {
+              "type": "none",
+              "conditions": [
+                { "type": "ast_pattern", "pattern": "import helper" }
+              ]
+            },
+            { "type": "ast_pattern", "pattern": "def format_name(_):\n    ..." }
+          ]
+        }
+      },
+      "message": "`format_name` already lives in `helper.py` — don't rewrite it. `import helper` and call `helper.format_name(...)` so every program shares one implementation.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "You reused the seeded helper module instead of rewriting its logic.",
+    "test_cases": [
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 40,
+        "feedback_on_pass": "The output matches exactly.",
+        "feedback_on_fail": "Print `helper.format_name(\"ada lovelace grace hopper\")` — the result is `Ada Lovelace Grace Hopper`.",
+        "output_assertion": {
+          "enabled": true,
+          "expected": "Ada Lovelace Grace Hopper\n",
+          "match_mode": "exact"
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 30,
+        "feedback_on_pass": "You imported the helper module.",
+        "feedback_on_fail": "Reuse the provided module: `import helper` at the top, then call `helper.format_name(...)`.",
+        "conditions": { "type": "ast_pattern", "pattern": "import helper" }
+      },
+      {
+        "id": "test_file",
+        "type": "file_state",
+        "points": 30,
+        "feedback_on_pass": "helper.py is still in the workspace.",
+        "feedback_on_fail": "Keep the provided `helper.py` in the workspace — import and reuse it; don't delete or replace it.",
+        "path": "helper.py",
+        "exists": true,
+        "format": "text",
+        "content_assertion": {
+          "enabled": true,
+          "expected": "def format_name",
+          "match_mode": "contains"
+        }
+      }
+    ]
+  }
+}

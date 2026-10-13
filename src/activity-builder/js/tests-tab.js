@@ -1192,15 +1192,20 @@ function renderReturnAssertionEditor(prefix, assertion) {
     <div class="form-group">
       <label class="checkbox-label">
         <input type="checkbox" id="${prefix}-enabled" ${assertion.enabled ? 'checked' : ''}>
-        Call the function and verify its return value or type
+        Call the function and verify its return value, type, or exception
       </label>
     </div>
     <fieldset id="${prefix}-fields" ${assertion.enabled ? '' : 'disabled'} style="border:1px solid #ddd;border-radius:6px;padding:12px;margin:0 0 12px">
-      <legend style="padding:0 6px;font-weight:600">Return assertion</legend>
+      <legend style="padding:0 6px;font-weight:600">Return / exception assertion</legend>
       <div class="form-group">
         <label>Arguments</label>
         <input type="text" id="${prefix}-arguments" class="mono" value="${escapeAttr(formatJsonArray(assertion.arguments))}" placeholder='e.g. [1, "cow"]'>
         <small>A JSON array with one entry per argument: numbers, strings, booleans, null, lists, or objects.</small>
+      </div>
+      <div class="form-group">
+        <label>Expected exception type (optional)</label>
+        <input type="text" id="${prefix}-expected-error-type" value="${escapeAttr(assertion.expected_error_type || '')}" placeholder="ValueError">
+        <small>When set, the call passes only when this exception type is raised; do not combine it with return-value, type, or list checks.</small>
       </div>
       <div class="form-group">
         <label>Expected return type</label>
@@ -1270,6 +1275,11 @@ function bindReturnAssertionFields(prefix, assertion, rerender) {
   });
   bindParsedField(`${prefix}-arguments`, parseJsonArray, (values) => {
     assertion.arguments = values;
+  });
+  bindField(`${prefix}-expected-error-type`, (value) => {
+    const expectedErrorType = value.trim();
+    if (expectedErrorType) assertion.expected_error_type = expectedErrorType;
+    else delete assertion.expected_error_type;
   });
   bindField(`${prefix}-type`, (value) => {
     assertion.expected_type = value;

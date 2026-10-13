@@ -72,6 +72,11 @@ test('the dialog round-trip yields one coherent transcript', async (t) => {
 
   await page.click('#btn-run');
   await page.waitForSelector('#input-dialog:not(.hidden)', { timeout: 30_000 });
+  await page.waitForFunction(
+    () => /What is your name\?/.test(document.querySelector('[data-console-transcript]')?.textContent ?? ''),
+    undefined,
+    { timeout: 10_000 },
+  );
 
   const promptVisible = await page.evaluate(() => {
     const transcript = document.querySelector('[data-console-transcript]');

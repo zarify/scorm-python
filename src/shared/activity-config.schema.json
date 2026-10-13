@@ -478,6 +478,11 @@
           "enum": ["any", "int", "float", "bool", "string", "list", "tuple", "dict", "null"],
           "default": "any"
         },
+        "expected_error_type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The configured call must raise an exception with this exact type name instead of returning a value"
+        },
         "value_assertion_enabled": {
           "type": "boolean",
           "default": false

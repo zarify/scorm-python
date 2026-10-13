@@ -389,3 +389,23 @@ test('the preview iframe runs the real student app', async (t) => {
   assert.match(transcript, /Program finished/);
   assert.deepEqual(errors, []);
 });
+
+test('function_state can be configured to expect an exception type', async (t) => {
+  if (skipReason) return t.skip(skipReason);
+  const { page, errors, close } = await builderPage();
+  t.after(close);
+
+  const configPath = join(REPO_ROOT, 'curriculum/activities/32-raise-error/activity.json');
+  await importConfigIntoBuilder(page, configPath);
+  await openTab(page, 'tests');
+  await page.click('.test-list-item[data-index="0"]');
+
+  const errorType = page.locator('#test-function-return-expected-error-type');
+  await errorType.waitFor({ state: 'visible' });
+  assert.equal(await errorType.inputValue(), 'ValueError');
+  await errorType.fill('TypeError');
+  await page.waitForFunction(
+    () => window.ActivityBuilder.getConfig().evaluation.test_cases[0].return_assertion.expected_error_type === 'TypeError',
+  );
+  assert.deepEqual(errors, []);
+});

@@ -1,0 +1,86 @@
+{
+  "metadata": {
+    "activity_id": "32_raise_error",
+    "title": "Raise a ValueError",
+    "version": "1.0",
+    "description": "Define a function that raises ValueError for invalid arguments instead of printing an error."
+  },
+  "instructions": {
+    "main": "Define `withdraw(amount)`: return the amount when it is not negative, and raise `ValueError` when it is negative.",
+    "steps": [
+      "Define `def withdraw(amount):`.",
+      "Guard the invalid case: `if amount < 0: raise ValueError(\"amount must not be negative\")`.",
+      "Raise the error — a function_state call to `withdraw(-1)` checks that the exact exception type is `ValueError`."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Define `def withdraw(amount):` and end the negative branch with `raise ValueError(...)`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-raise",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "print\\s*\\(" }
+      },
+      "message": "Printing an error message is not raising one — the caller cannot catch a print. Use `raise ValueError(\"amount must not be negative\")` so the invalid amount stops the program.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "withdraw returns valid amounts and raises ValueError for negative ones.",
+    "test_cases": [
+      {
+        "id": "test_fn",
+        "type": "function_state",
+        "points": 50,
+        "function_name": "withdraw",
+        "parameter_count_enabled": true,
+        "parameter_count": 1,
+        "feedback_on_pass": "`withdraw(-1)` raises ValueError as required.",
+        "feedback_on_fail": "For a negative amount, raise `ValueError` — printing an error or returning normally is not enough.",
+        "return_assertion": {
+          "enabled": true,
+          "arguments": [-1],
+          "expected_error_type": "ValueError"
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 50,
+        "feedback_on_pass": "You raise ValueError in the invalid branch.",
+        "feedback_on_fail": "Raise the error with `raise ValueError(\"amount must not be negative\")` — don't print an error message.",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "raise ValueError(_)"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "metadata": {
+    "activity_id": "05_area_of_rectangle",
+    "title": "Area of a Rectangle",
+    "version": "1.0",
+    "description": "Define a two-parameter function that returns the product of length and width."
+  },
+  "instructions": {
+    "main": "Define `area(length, width)` so that it returns the product of the two parameters.",
+    "steps": [
+      "Define `def area(length, width):` with exactly two parameters.",
+      "Return the product — do not print it.",
+      "Calling `area(3, 4)` must evaluate to `12`."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Define `def area(length, width):` and `return length * width`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-return",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "print\\s*\\(" }
+      },
+      "message": "`area` must `return` the product, not `print` it — printing gives back `None` instead of the number.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-params",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "def area(_):\n    ..." }
+      },
+      "message": "`area` needs two parameters — `length` and `width` — so it can multiply them.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "`area` returns the product for two parameters.",
+    "test_cases": [
+      {
+        "id": "test_fn",
+        "type": "function_state",
+        "points": 100,
+        "function_name": "area",
+        "parameter_count_enabled": true,
+        "parameter_count": 2,
+        "feedback_on_pass": "`area(3, 4)` returns 12 and takes two parameters.",
+        "feedback_on_fail": "`area(3, 4)` must return `12` using exactly two parameters — `return length * width`.",
+        "return_assertion": {
+          "enabled": true,
+          "arguments": [3, 4],
+          "expected_type": "int",
+          "value_assertion_enabled": true,
+          "expected_value": 12,
+          "comparison": "equals",
+          "show_expected": true,
+          "show_actual": true
+        }
+      }
+    ]
+  }
+}

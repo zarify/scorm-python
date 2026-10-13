@@ -237,7 +237,7 @@ function buildPlan(tc, activityFiles) {
   const capture = {
     variables,
     functions,
-    functionCalls,
+    function_calls: functionCalls,
     read_paths: readPaths,
     scoped_function: scopedFunction,
   };
@@ -252,7 +252,7 @@ function planKeyFor(tc, activityFiles) {
     files: plan.files,
     variables: plan.capture.variables,
     functions: plan.capture.functions,
-    functionCalls: plan.capture.functionCalls,
+    functionCalls: plan.capture.function_calls,
     scopedFunction: plan.capture.scoped_function,
     readPaths: plan.capture.read_paths,
   });
@@ -342,13 +342,14 @@ function toExecutionResult(raw) {
   for (const entry of raw.functionCalls || []) {
     if (!entry || typeof entry.key !== 'string') continue;
     functionCalls[entry.key] = entry.ok
-      ? { success: true, error: null, returnValue: entry.value }
+      ? { success: true, error: null, errorType: null, returnValue: entry.value }
       : {
         success: false,
         error: entry.error
           ? `${entry.error.type}: ${entry.error.message}`
             + (entry.error.line ? ` (line ${entry.error.line})` : '')
           : 'call failed',
+        errorType: entry.error?.type || null,
         returnValue: undefined,
       };
   }
@@ -923,6 +924,7 @@ function evaluateCsvAssertions(tc, record) {
 }
 
 function inferCsvCellType(raw) {
+  if (/^(?:[Tt]rue|[Ff]alse)$/.test(raw)) return 'bool';
   if (/^[+-]?\d+$/.test(raw)) return 'int';
   if (/^[+-]?(\d+\.\d*|\.\d+)([eE][+-]?\d+)?$/.test(raw)) return 'float';
   return 'string';
@@ -931,7 +933,9 @@ function inferCsvCellType(raw) {
 function coerceCsvCell(raw, expectedType, expectedValue) {
   if (expectedType === 'int' || expectedType === 'float') return Number(raw);
   if (typeof expectedValue === 'number') return Number(raw);
-  if (typeof expectedValue === 'boolean') return raw === 'true';
+  if (expectedType === 'bool' || typeof expectedValue === 'boolean') {
+    return /^(?:[Tt]rue)$/.test(raw);
+  }
   return raw;
 }
 
@@ -981,6 +985,23 @@ function evaluateFunctionReturnAssertion(functionName, returnAssertion, callResu
     return {
       passed: false,
       detail: `The configured call to ${formatFunctionCall(functionName, returnAssertion.arguments)} did not run.`,
+      customFailureMessage: returnAssertion.failure_message || '',
+      studentNote: null,
+      studentSections: [],
+    };
+  }
+
+  if (returnAssertion.expected_error_type) {
+    const expectedErrorType = returnAssertion.expected_error_type;
+    const passed = !callResult.success && callResult.errorType === expectedErrorType;
+    const detail = passed
+      ? `The configured call to ${formatFunctionCall(functionName, returnAssertion.arguments)} raised ${expectedErrorType}.`
+      : callResult.success
+        ? `Expected ${formatFunctionCall(functionName, returnAssertion.arguments)} to raise ${expectedErrorType}, but it returned normally.`
+        : `Expected ${formatFunctionCall(functionName, returnAssertion.arguments)} to raise ${expectedErrorType}, got ${callResult.errorType || 'an error'}.`;
+    return {
+      passed,
+      detail,
       customFailureMessage: returnAssertion.failure_message || '',
       studentNote: null,
       studentSections: [],
@@ -1180,10 +1201,39 @@ function hasAnyListChecks(listAssertions) {
     || listAssertions.index_checks.length > 0;
 }
 
+function pythonValueEquals(actual, expected) {
+  if (actual === null || expected === null) return actual === expected;
+  if (typeof actual !== typeof expected) return false;
+  if (typeof actual === 'boolean' || typeof actual === 'string' || typeof actual === 'number') {
+    return actual === expected;
+  }
+  if (Array.isArray(actual) || Array.isArray(expected)) {
+    return Array.isArray(actual)
+      && Array.isArray(expected)
+      && actual.length === expected.length
+      && actual.every((value, index) => pythonValueEquals(value, expected[index]));
+  }
+  if (isPlainObject(actual) || isPlainObject(expected)) {
+    if (!isPlainObject(actual) || !isPlainObject(expected)) return false;
+    const actualKeys = Object.keys(actual);
+    const expectedKeys = Object.keys(expected);
+    return actualKeys.length === expectedKeys.length
+      && actualKeys.every((key) => Object.hasOwn(expected, key)
+        && pythonValueEquals(actual[key], expected[key]));
+  }
+  return false;
+}
+
+function isPlainObject(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
 function compareVariableValues(actual, expected, comparison) {
   switch (comparison) {
     case 'equals':
-      return actual == expected; // eslint-disable-line eqeqeq
+      return pythonValueEquals(actual, expected);
     case 'gt':
       return actual > expected;
     case 'lt':

@@ -643,6 +643,20 @@ test('function_state normalizes its parameter count and return assertion', () =>
   ]);
 });
 
+test('function_state preserves its expected exception type', () => {
+  const drafted = draftTest({
+    type: 'function_state',
+    function_name: 'withdraw',
+    return_assertion: {
+      arguments: [-1],
+      expected_error_type: 'ValueError',
+    },
+  });
+
+  assert.equal(drafted.return_assertion.enabled, true);
+  assert.equal(drafted.return_assertion.expected_error_type, 'ValueError');
+});
+
 test('code_structure normalizes each of the six condition types', () => {
   assert.deepEqual(draftCondition({ type: 'ast_pattern', pattern: 'print(...)' }), {
     type: 'ast_pattern',

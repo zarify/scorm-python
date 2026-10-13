@@ -1,0 +1,105 @@
+{
+  "metadata": {
+    "activity_id": "28_write_report",
+    "title": "Write a Report File",
+    "version": "1.0",
+    "description": "Overwrite a report file with a two-line summary using write mode."
+  },
+  "instructions": {
+    "main": "Write `report.txt` containing exactly two lines: `Items processed: 5` then `Average: 2.5`. If an old `report.txt` exists, replace its contents.",
+    "steps": [
+      "Open the file for writing: `with open(\"report.txt\", \"w\") as f:`.",
+      "Write both lines, e.g. `f.write(\"Items processed: 5\\nAverage: 2.5\\n\")`.",
+      "Mode `\"w\"` overwrites the file from scratch — mode `\"a\"` would keep the old content."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Open `report.txt` with `with open(\"report.txt\", \"w\") as f:` and `f.write(...)` both summary lines.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-write",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "print\\s*\\(" }
+      },
+      "message": "Printing sends the summary to the console, not to the file — write it into `report.txt` with `f.write(...)`.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-mode",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "open(_)" }
+      },
+      "message": "`report.txt` must contain only the new summary — open it in write mode (`open(\"report.txt\", \"w\")`), not read mode, and don't carry the old content forward.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "report.txt contains exactly the two-line summary.",
+    "test_cases": [
+      {
+        "id": "test_file",
+        "type": "file_state",
+        "points": 70,
+        "path": "report.txt",
+        "exists": true,
+        "format": "text",
+        "setup_files": [
+          {
+            "path": "report.txt",
+            "content": "Old draft summary\n"
+          }
+        ],
+        "feedback_on_pass": "The report contains exactly the two summary lines.",
+        "feedback_on_fail": "Write `report.txt` so it contains exactly `Items processed: 5` and `Average: 2.5` — replacing any old content, not adding to it.",
+        "content_assertion": {
+          "enabled": true,
+          "expected": "^Items processed: 5\nAverage: 2\\.5\n$",
+          "match_mode": "regex"
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 30,
+        "feedback_on_pass": "You opened the file in write mode.",
+        "feedback_on_fail": "Open the file for writing with `open(\"report.txt\", \"w\")` — the `\"w\"` mode truncates the old content.",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "open(_, 'w')"
+        }
+      }
+    ]
+  }
+}

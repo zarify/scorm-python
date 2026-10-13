@@ -1,0 +1,99 @@
+{
+  "metadata": {
+    "activity_id": "07_odd_even",
+    "title": "Odd or Even",
+    "version": "1.0",
+    "description": "Return a boolean stating whether n is even, correctly handling negative values."
+  },
+  "instructions": {
+    "main": "Define `is_even(n)` returning `True` when `n` is even and `False` when it is odd — negative numbers included.",
+    "steps": [
+      "Define `def is_even(n):`.",
+      "Use `n % 2 == 0` — Python's `%` works for negatives too (`-4 % 2` is `0`).",
+      "Return a real boolean (`True`/`False`), not a string.",
+      "The program must leave the result of `is_even(-3)` in a variable named `result`."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Define `def is_even(n):` and `return n % 2 == 0` — the `%` check works for negatives too.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-negative",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "if _ > _:\n    ..." }
+      },
+      "message": "Don't guard with `n > 0` — Python's `%` already handles negatives (`-4 % 2` is `0`), so one check covers every value.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-bool",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "[\"'](?:True|False)[\"']" }
+      },
+      "message": "Return a real boolean (`True`/`False`), not the strings `\"True\"`/`\"False\"`.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "`is_even` returns a proper boolean for negative values too.",
+    "test_cases": [
+      {
+        "id": "test_state",
+        "type": "variable_state",
+        "points": 70,
+        "variable_name": "result",
+        "expected_type": "bool",
+        "value_assertion_enabled": true,
+        "expected_value": false,
+        "comparison": "equals",
+        "feedback_on_pass": "`is_even(-3)` returns the boolean `False`.",
+        "feedback_on_fail": "Leave `result = is_even(-3)` at the end — for -3 it must be the boolean `False`.",
+        "show_coerced_value_hint": false
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 30,
+        "feedback_on_pass": "You used the remainder operator.",
+        "feedback_on_fail": "Use the remainder operator: `n % 2 == 0`.",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "_ % _",
+          "min_count": 1
+        }
+      }
+    ]
+  }
+}

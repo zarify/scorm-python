@@ -501,6 +501,11 @@ test('a return assertion normalizes partial input and derives its enabled flag',
   // Any assertion-shaped field switches the assertion on.
   assert.equal(getFunctionReturnAssertion({ return_assertion: { arguments: [1] } }).enabled, true);
   assert.equal(getFunctionReturnAssertion({ return_assertion: { show_actual: true } }).enabled, true);
+  const errorOnly = getFunctionReturnAssertion({
+    return_assertion: { arguments: [-1], expected_error_type: ' ValueError ' },
+  });
+  assert.equal(errorOnly.enabled, true);
+  assert.equal(errorOnly.expected_error_type, 'ValueError');
   assert.equal(
     getFunctionReturnAssertion({ return_assertion: { enabled: false, expected_value: 5 } }).enabled,
     false,

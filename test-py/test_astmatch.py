@@ -125,6 +125,55 @@ class AnyParamsRewriteTests(unittest.TestCase):
     def test_async_def_header_also_rewrites(self):
         source = "async def fetch(url):\n    return url"
         self.assertEqual(count(source, "async def _(...): ..."), 1)
+    def test_prefix_stub_parameters_match_named_prefix_and_any_remainder(self):
+        self.assertEqual(
+            count(
+                "def __init__(self, name, age=0):\n    pass",
+                "def __init__(self, ...): ...",
+            ),
+            1,
+        )
+        self.assertEqual(count("def f(a, b, c):\n    pass", "def f(a, ...): ..."), 1)
+        self.assertEqual(count("def f(a):\n    pass", "def f(a, ...): ..."), 1)
+        self.assertEqual(count("def f(b):\n    pass", "def f(a, ...): ..."), 0)
+        self.assertEqual(count("def f(a, b):\n    pass", "def f(a, b): ..."), 1)
+        self.assertEqual(count("def f(a, b, c):\n    pass", "def f(a, b): ..."), 0)
+        self.assertEqual(count("def f(a, b):\n    pass", "def f(...): ..."), 1)
+
+    def test_ellipsis_must_be_the_trailing_parameter_marker(self):
+        for pattern in ("def f(..., a): ...", "def f(a, ..., b): ..."):
+            with self.subTest(pattern=pattern):
+                with self.assertRaises(astmatch.PatternError):
+                    astmatch.validate(pattern)
+
+
+class IdentifierWildcardTests(unittest.TestCase):
+    def test_import_aliases_are_optional_only_in_variant_mode(self):
+        self.assertEqual(count("import math as m", "import math"), 1)
+        self.assertEqual(count("import math as m", "import math", strict=True), 0)
+        self.assertEqual(count("from math import sqrt as s", "from math import sqrt"), 1)
+
+    def test_import_identifier_wildcards(self):
+        self.assertEqual(count("import math as anything", "import math as _"), 1)
+        self.assertEqual(count("import math as anything", "import math as _", strict=True), 1)
+        self.assertEqual(count("from math import sqrt", "from math import _"), 1)
+
+    def test_fixed_arity_wildcards_cover_definition_and_lambda_arguments(self):
+        self.assertEqual(count("def area(x, y):\n    pass", "def _(_, _): ..."), 1)
+        self.assertEqual(count("def f(x):\n    pass", "def f(_): ..."), 1)
+        self.assertEqual(count("def f(x, y):\n    pass", "def f(_): ..."), 0)
+        self.assertEqual(count("lambda x: x + 1", "lambda _: _"), 1)
+        self.assertEqual(count("lambda x: x + 1", "lambda _: _", strict=True), 1)
+        self.assertEqual(count("lambda a, b: a + b", "lambda _, _: _"), 1)
+
+    def test_attribute_name_wildcards(self):
+        self.assertEqual(count("print(s.strip())", "_x._y"), 1)
+        self.assertEqual(count("print(s.append(1))", "_x.append(_)"), 1)
+        self.assertEqual(count("print(s.extend(1))", "_x.append(_)"), 0)
+
+    def test_named_definition_wildcards_bind_across_identifier_slots(self):
+        self.assertEqual(count("def area(x):\n    pass\narea(1)", "def _f(...): ...\n...\n_f(_)"), 1)
+
 
 
 class ValidationTests(unittest.TestCase):

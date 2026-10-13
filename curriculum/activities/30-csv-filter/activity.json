@@ -1,0 +1,124 @@
+{
+  "metadata": {
+    "activity_id": "30_csv_filter",
+    "title": "Filter CSV Rows",
+    "version": "1.0",
+    "description": "Keep only the CSV rows whose ok cell is True and write them to a result CSV."
+  },
+  "instructions": {
+    "main": "`data.csv` lives in the workspace with columns `name` and `ok`. Write `result.csv` with the header and only the rows whose `ok` cell is `True` (Ada and Linus).",
+    "steps": [
+      "Import the module: `import csv`.",
+      "Read `data.csv` with `csv.reader`, capture the header via `next(reader)`, and keep rows where `row[1] == \"True\"` — cells arrive as strings.",
+      "Write `result.csv` with `csv.writer`: `writer.writerow(header)` then `writer.writerows(kept)`. Python's csv writer spells the boolean `True`."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [
+      {
+        "path": "data.csv",
+        "content": "name,ok\nAda,True\nGrace,False\nLinus,True\nMargaret,False\n"
+      }
+    ],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Read `data.csv` with `csv.reader`, keep the rows where `row[1] == \"True\"`, and write them back with `csv.writer`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-filter",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "none",
+          "conditions": [
+            { "type": "source_regex", "pattern": "==" }
+          ]
+        }
+      },
+      "message": "You are copying every row — only keep the ones where the `ok` cell is `True`: `kept = [row for row in reader if row[1] == \"True\"]`.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-bool",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "==\\s*True" }
+      },
+      "message": "CSV cells arrive as strings — `row[1] == True` compares a string to a boolean and is never true. Compare against the string `\"True\"` instead.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "result.csv keeps only the rows whose ok cell is True.",
+    "test_cases": [
+      {
+        "id": "test_file",
+        "type": "file_state",
+        "points": 100,
+        "path": "result.csv",
+        "exists": true,
+        "format": "csv",
+        "feedback_on_pass": "The result keeps exactly the True rows.",
+        "feedback_on_fail": "Write `result.csv` with the header and only the rows whose `ok` cell is `True` — Ada and Linus.",
+        "csv_assertions": {
+          "row_count": 3,
+          "row_count_comparison": "equals",
+          "header": ["name", "ok"],
+          "cells": [
+            {
+              "row": 1,
+              "column": 0,
+              "expected_value": "Ada"
+            },
+            {
+              "row": 1,
+              "column": 1,
+              "expected_value": true,
+              "comparison": "equals",
+              "expected_type": "bool"
+            },
+            {
+              "row": 2,
+              "column": 0,
+              "expected_value": "Linus"
+            },
+            {
+              "row": 2,
+              "column": 1,
+              "expected_value": true,
+              "comparison": "equals",
+              "expected_type": "bool"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

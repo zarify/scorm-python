@@ -1,0 +1,79 @@
+{
+  "metadata": {
+    "activity_id": "09_multiplication_table",
+    "title": "Multiplication Table",
+    "version": "1.0",
+    "description": "Print the n-times table for rows 1..n with a for loop over range(1, n + 1)."
+  },
+  "instructions": {
+    "main": "Set `n = 5` and print the 5-times table, one row per line: `5 x 1 = 5` through `5 x 5 = 25`.",
+    "steps": [
+      "Loop `i` over `range(1, n + 1)` so every row from 1 to n is printed.",
+      "Print each row as `n x i = n * i`."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Start with `n = 5` and a `for i in range(1, n + 1):` loop.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-range",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "range(_, n)" }
+      },
+      "message": "`range(1, n)` stops before n — the last row is missing. Use `range(1, n + 1)`.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "Your multiplication table prints every row from 1 to n.",
+    "test_cases": [
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 70,
+        "feedback_on_pass": "All five rows print exactly as required.",
+        "feedback_on_fail": "Print every row from `5 x 1 = 5` to `5 x 5 = 25` — check the range end.",
+        "output_assertion": {
+          "enabled": true,
+          "expected": "5 x 1 = 5\n5 x 2 = 10\n5 x 3 = 15\n5 x 4 = 20\n5 x 5 = 25\n",
+          "match_mode": "exact"
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 30,
+        "feedback_on_pass": "You loop with range over two bounds.",
+        "feedback_on_fail": "Use a `for` loop with `range(start, stop)` to generate the rows.",
+        "conditions": { "type": "ast_pattern", "pattern": "for _ in range(_, _):\n    ..." }
+      }
+    ]
+  }
+}

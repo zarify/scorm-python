@@ -1,0 +1,80 @@
+{
+  "metadata": {
+    "activity_id": "22_function_defaults",
+    "title": "Function Default Arguments",
+    "version": "1.0",
+    "description": "Give a parameter a default value so the function works with one or two arguments."
+  },
+  "instructions": {
+    "main": "Define `greet(name, greeting=\"Hello\")` so `greet(\"Ada\")` returns `\"Hello, Ada!\"`.",
+    "steps": [
+      "Define `def greet(name, greeting=\"Hello\"):` with two parameters.",
+      "Give `greeting` the default value `\"Hello\"` right in the signature.",
+      "Return `greeting + \", \" + name + \"!\"`."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Define `def greet(name, greeting=\"Hello\"):` and return `greeting + \", \" + name + \"!\"`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-default",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "def greet(_, _):\n    ..." }
+      },
+      "message": "`greeting` needs a default value in the signature — write `def greet(name, greeting=\"Hello\"):` so one-argument calls work.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "`greet` uses a default argument correctly.",
+    "test_cases": [
+      {
+        "id": "test_fn",
+        "type": "function_state",
+        "points": 100,
+        "function_name": "greet",
+        "parameter_count_enabled": true,
+        "parameter_count": 2,
+        "feedback_on_pass": "`greet(\"Ada\")` returns \"Hello, Ada!\" using the default greeting.",
+        "feedback_on_fail": "`greet(\"Ada\")` must return `\"Hello, Ada!\"` — give `greeting` the default `\"Hello\"` in the signature.",
+        "return_assertion": {
+          "enabled": true,
+          "arguments": ["Ada"],
+          "expected_type": "string",
+          "value_assertion_enabled": true,
+          "expected_value": "Hello, Ada!",
+          "comparison": "equals",
+          "show_expected": true,
+          "show_actual": true
+        }
+      }
+    ]
+  }
+}

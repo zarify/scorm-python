@@ -1,0 +1,116 @@
+{
+  "metadata": {
+    "activity_id": "23_pure_vs_printing",
+    "title": "Return, Don't Print",
+    "version": "1.0",
+    "description": "Write a pure function that returns its result and produces no output of its own."
+  },
+  "instructions": {
+    "main": "Define `double(n)` that returns twice `n`. Calling `double(4)` must return `8` and print nothing.",
+    "steps": [
+      "Define `def double(n):`.",
+      "Return the result with `return n * 2` — do not `print` inside the function.",
+      "A checker will call `double(4)` and capture any output the call produces; it must be empty."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Define `def double(n):` and finish with `return n * 2`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-pure",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": "print\\s*\\(" }
+      },
+      "message": "`double` must return its result, not print it — a `print` produces output but gives the function back `None`.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-no-print",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "none",
+          "conditions": [
+            { "type": "source_regex", "pattern": "print\\s*\\(" }
+          ]
+        },
+        "invalidate_on_condition_false": true
+      },
+      "message": "Keep `double` pure: no `print` calls — return the value with `return n * 2`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "`double` returns its result and prints nothing.",
+    "test_cases": [
+      {
+        "id": "test_fn",
+        "type": "function_state",
+        "points": 60,
+        "function_name": "double",
+        "parameter_count_enabled": true,
+        "parameter_count": 1,
+        "feedback_on_pass": "`double(4)` returns 8.",
+        "feedback_on_fail": "`double(4)` must return `8` — use `return n * 2`, not `print`.",
+        "return_assertion": {
+          "enabled": true,
+          "arguments": [4],
+          "expected_type": "int",
+          "value_assertion_enabled": true,
+          "expected_value": 8,
+          "comparison": "equals",
+          "show_expected": true,
+          "show_actual": true
+        }
+      },
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 40,
+        "feedback_on_pass": "Calling `double(4)` produced no output.",
+        "feedback_on_fail": "Calling `double(4)` must print nothing — remove the `print` and `return` the value instead.",
+        "execution_context": {
+          "scope": "function",
+          "function_name": "double",
+          "arguments": [4]
+        },
+        "output_assertion": {
+          "enabled": true,
+          "expected": "",
+          "match_mode": "exact"
+        }
+      }
+    ]
+  }
+}

@@ -6,13 +6,10 @@
  * runtime against a real SCORM API — only exists in a browser, so these tests
  * serve `dist/` and drive it with Playwright.
  *
- * The browser is the Chrome already on the machine (`channel: 'chrome'`), which
- * needs no download. CI without Chrome can run `npx playwright install
- * chromium` and set `PLAYWRIGHT_CHANNEL=chromium` (or leave it unset — the
- * bundled Chromium is the fallback). When neither is available the browser
- * tests skip instead of failing, so `npm test` stays usable everywhere.
+ * The browser is Playwright's managed Chromium (or an explicitly selected
+ * non-Chrome channel); when none is available these tests skip. CI can install
+ * Playwright Chromium with `npx playwright install chromium`.
  */
-
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve } from 'node:path';
@@ -82,36 +79,34 @@ export async function startStaticServer(rootDirectory = DIST, { contentTypes = C
 /**
  * Launch a browser, or return null when none is available.
  *
- * Tries, in order: the channel named by `PLAYWRIGHT_CHANNEL`, Playwright's own
- * Chromium (`npx playwright install chromium`), the Chrome already installed on
- * the machine, and finally any Chromium build left in Playwright's cache under
- * a different revision. The last one matters in sandboxes where the installed
- * Chrome refuses to start but a cached Chrome for Testing does not.
+ * Tries an explicitly selected non-Chrome channel, Playwright's own Chromium,
+ * then Chromium builds in Playwright's cache. Chrome.app is never launched.
  * @returns {Promise<import('playwright').Browser|null>}
  */
 export async function launchBrowser() {
   const { chromium } = await import('playwright');
+  const args = ['--no-sandbox', '--disable-setuid-sandbox'];
   const candidates = [];
 
-  if (process.env.PLAYWRIGHT_CHANNEL) {
-    candidates.push({ channel: process.env.PLAYWRIGHT_CHANNEL });
+  if (process.env.PLAYWRIGHT_CHANNEL && process.env.PLAYWRIGHT_CHANNEL !== 'chrome') {
+    candidates.push({ channel: process.env.PLAYWRIGHT_CHANNEL, args });
   }
-  candidates.push({});
-  candidates.push({ channel: 'chrome' });
+  candidates.push({ args });
   for (const executablePath of await findCachedChromiumExecutables()) {
-    candidates.push({ executablePath });
+    candidates.push({ executablePath, args });
   }
 
   for (const options of candidates) {
     try {
       return await chromium.launch(options);
     } catch {
-      // Try the next candidate; the caller skips when none launches.
+      // Try the next managed build; the caller skips when none launches.
     }
   }
 
   return null;
 }
+
 
 /** Chromium builds sitting in Playwright's browser cache, newest revision first. */
 async function findCachedChromiumExecutables() {

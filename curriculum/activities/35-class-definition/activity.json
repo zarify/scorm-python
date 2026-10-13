@@ -1,0 +1,116 @@
+{
+  "metadata": {
+    "activity_id": "35_class_definition",
+    "title": "A Dog Class",
+    "version": "1.0",
+    "description": "Define a class with a constructor that stores state on self and a method that prints it."
+  },
+  "instructions": {
+    "main": "Define `class Dog` with `__init__(self, name, age)` that stores `self.name` and `self.age`, and `bark(self)` printing `<name> says woof!`. Then construct `dog = Dog(\"Rex\", 3)` and call `dog.bark()`.",
+    "steps": [
+      "Start the class: `class Dog:`.",
+      "Add the constructor `def __init__(self, name, age):` and store `self.name = name` and `self.age = age`.",
+      "Add `def bark(self):` with `print(f\"{self.name} says woof!\")`, then run it with `dog = Dog(\"Rex\", 3)` and `dog.bark()` — the output is `Rex says woof!`."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Define `class Dog:` with `def __init__(self, name, age):` storing `self.name = name`, a `def bark(self):` printing the woof line, then `dog = Dog(\"Rex\", 3)` and `dog.bark()`.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-init",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "none",
+          "conditions": [
+            { "type": "ast_pattern", "pattern": "def __init__(self, ...):\n    ..." }
+          ]
+        }
+      },
+      "message": "`Dog(\"Rex\", 3)` needs a constructor — add `def __init__(self, name, age):` so the class can receive the name and age when it is created.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-self",
+      "trigger": {
+        "event": "code_change",
+        "conditions": {
+          "type": "all",
+          "conditions": [
+            { "type": "ast_pattern", "pattern": "def __init__(self, ...):\n    ..." },
+            {
+              "type": "none",
+              "conditions": [
+                { "type": "ast_pattern", "pattern": "self.name = _" }
+              ]
+            }
+          ]
+        }
+      },
+      "message": "`__init__` receives `self` but never stores anything on it — add `self.name = name` and `self.age = age`, otherwise `dog.name` doesn't exist and `bark` crashes.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "Your Dog class constructs with name and age, stores them on self, and barks correctly.",
+    "test_cases": [
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 50,
+        "feedback_on_pass": "The output matches exactly.",
+        "feedback_on_fail": "Construct `dog = Dog(\"Rex\", 3)` and call `dog.bark()` so it prints `Rex says woof!` on its own line.",
+        "output_assertion": {
+          "enabled": true,
+          "expected": "Rex says woof!\n",
+          "match_mode": "exact"
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 50,
+        "feedback_on_pass": "The class, the constructor, and the method are all defined.",
+        "feedback_on_fail": "Define all three pieces: `class Dog:`, a `def __init__(self, name, age):` constructor, and a `def bark(self):` method inside the class.",
+        "conditions": {
+          "type": "all",
+          "conditions": [
+            { "type": "ast_pattern", "pattern": "class _:\n    ..." },
+            { "type": "ast_pattern", "pattern": "def __init__(self, ...):\n    ..." },
+            { "type": "ast_pattern", "pattern": "def _(self, ...):\n    ..." }
+          ]
+        }
+      }
+    ]
+  }
+}

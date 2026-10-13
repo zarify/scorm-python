@@ -1,0 +1,115 @@
+{
+  "metadata": {
+    "activity_id": "06_grade_classifier",
+    "title": "Grade Classifier",
+    "version": "1.0",
+    "description": "Map a score from 0 to 100 to a letter grade with a single if/elif/else chain."
+  },
+  "instructions": {
+    "main": "A student scored 70. Print the letter grade: 90+ is A, 80+ is B, 70+ is C, 60+ is D, anything lower is E.",
+    "steps": [
+      "Set `score = 70`.",
+      "Use ONE chain: `if score >= 90: A`, `elif score >= 80: B`, `elif score >= 70: C`, `elif score >= 60: D`, `else: E`.",
+      "Print the grade. A score of exactly 70 must be a C."
+    ]
+  },
+  "ui_settings": {
+    "show_hint_panel": true,
+    "suspend_data_limit": 4096
+  },
+  "python_setup": {
+    "starter_code": "",
+    "files": [],
+    "packages": [],
+    "pyodide_base_url": ""
+  },
+  "hints": [
+    {
+      "id": "hint-start",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_empty" }
+      },
+      "message": "Build one chain: `if score >= 90` → A, `elif score >= 80` → B, `elif score >= 70` → C, `elif score >= 60` → D, `else` → E.",
+      "display_mode": "checklist",
+      "priority": 1,
+      "delay_seconds": 0,
+      "show_once": false,
+      "style": "success"
+    },
+    {
+      "id": "hint-elif",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "ast_pattern", "pattern": "if _:\n    ...\nif _:\n    ..." }
+      },
+      "message": "Separate `if` blocks all run, so a later one overwrites the grade — keep a single `if / elif / else` chain.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-boundary",
+      "trigger": {
+        "event": "code_change",
+        "conditions": { "type": "source_regex", "pattern": ">\\s*\\d" }
+      },
+      "message": "Use `>=` at the boundaries: a score of exactly 70 must be a C, not a D.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    },
+    {
+      "id": "hint-no-loop",
+      "trigger": {
+        "event": "manual",
+        "conditions": {
+          "type": "none",
+          "conditions": [
+            { "type": "ast_pattern", "pattern": "while _:\n    ..." }
+          ]
+        }
+      },
+      "message": "No `while` loop is needed here — classify the score with `if / elif / else`.",
+      "display_mode": "triggered",
+      "priority": 2,
+      "delay_seconds": 0,
+      "show_once": true,
+      "style": "warning"
+    }
+  ],
+  "evaluation": {
+    "require_previous_test_pass": true,
+    "feedback_on_all_pass": "The score is classified with one correct if/elif/else chain.",
+    "test_cases": [
+      {
+        "id": "test_output",
+        "type": "stdout_match",
+        "points": 60,
+        "feedback_on_pass": "A score of 70 prints C.",
+        "feedback_on_fail": "A score of exactly 70 must print `C` — check your boundary comparisons.",
+        "output_assertion": {
+          "enabled": true,
+          "expected": "C\n",
+          "match_mode": "exact"
+        }
+      },
+      {
+        "id": "test_structure",
+        "type": "code_structure",
+        "points": 40,
+        "feedback_on_pass": "You used an if/elif chain.",
+        "feedback_on_fail": "Use one chain with at least three `elif` branches after the initial `if`.",
+        "conditions": {
+          "type": "ast_pattern",
+          "pattern": "if _:\n    ...\nelif _:\n    ...",
+          "min_count": 3
+        }
+      }
+    ]
+  }
+}
